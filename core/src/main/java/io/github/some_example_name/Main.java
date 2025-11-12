@@ -61,6 +61,8 @@ public class Main extends ApplicationAdapter {
         ScreenUtils.clear(0.15f, 0.15f, 0.2f, 1);
         batch.begin();
 
+        //0 is start, 1 is choose colour, 2 is pvp, 3 is vsai
+
         if (mode == 0) {
             board.draw(batch);
             menu.draw(batch);
@@ -133,4 +135,5 @@ public class Main extends ApplicationAdapter {
         menuTexture.dispose();
     }
 }
-/////////// testing 10000
+// Finished working is control+k then write what I changed then commit and push
+// Starting work is control+t then merge then pull

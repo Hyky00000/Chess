@@ -9,7 +9,7 @@ public class PlayerVsComputer {
     private Piece selectedPiece;
     private boolean pieceSelected = false;
     private boolean playerIsWhite;
-    private int aiDifficulty; // 1 is easy 2 iss medium 3 is hard
+    private int aiDifficulty; // 1 is easy 2 is medium 3 is hard
     private Random random = new Random();
 
     public PlayerVsComputer(Board board, boolean playerIsWhite, int aiDifficulty) {
@@ -21,7 +21,7 @@ public class PlayerVsComputer {
     public void click(float x, float y) {
         if (board.gameOver) return;
 
-        // Ignore thee click if computers turn s
+        // Ignore the click if computer's turn
         if (playerIsWhite && !whiteTurn) {
             return;
         }
@@ -64,9 +64,9 @@ public class PlayerVsComputer {
     private void makeAIMove() {
         PieceColour aiColour;
         if (playerIsWhite) {
-            aiColour = PieceColour.BLACK;
+            aiColour = PieceColour.BLACK;  // If player is white AI is black
         } else {
-            aiColour = PieceColour.WHITE;
+            aiColour = PieceColour.WHITE;  // If player is black AI is white
         }
 
         java.util.ArrayList<Board.Move> legalMoves = board.getAllLegalMoves(aiColour);
@@ -75,39 +75,69 @@ public class PlayerVsComputer {
             Board.Move chosenMove;
 
             switch (aiDifficulty) {
-                case 1: //easyy bot
+                case 1: // Easy bot completely random moves
                     chosenMove = getRandomMove(legalMoves);
                     break;
-                case 2: // Medium bot :O
-                    chosenMove = getMediumMove(legalMoves);
+                case 2: // Medium bot picks from good but not best moves
+                    chosenMove = getMediumMove(aiColour);
                     break;
-                case 3: // Hard bot
-                    chosenMove = getHardMove(legalMoves);
+                case 3: // Hard bot - picks from best moves
+                    chosenMove = getHardMove(aiColour);
                     break;
                 default:
                     chosenMove = getRandomMove(legalMoves);
                     break;
             }
 
-            //ACTUALLY making the move
+            // ACTUALLY making the move on the board
             board.makeMove(chosenMove);
-            whiteTurn = !whiteTurn;
+            whiteTurn = !whiteTurn;  // Switch turns after AI moves
         }
     }
 
-    // Easy AI picking random move
+    // Easy AI picking random move from all legal moves
     private Board.Move getRandomMove(java.util.ArrayList<Board.Move> legalMoves) {
-        return legalMoves.get(random.nextInt(legalMoves.size()));
+        // Pick a random number between 0 and size of legal moves
+        int randomIndex = random.nextInt(legalMoves.size());
+        return legalMoves.get(randomIndex);
     }
 
-    // Medium AI not finished =(
-    private Board.Move getMediumMove(java.util.ArrayList<Board.Move> legalMoves) {
-        return getRandomMove(legalMoves);
+    // Medium AI pick from good moves from the top third
+    private Board.Move getMediumMove(PieceColour aiColour) {
+        // Get all legal moves sorted from best to worst
+        java.util.ArrayList<Board.Move> sortedMoves = board.getSortedLegalMoves(aiColour);
+        if (sortedMoves.size() == 0) {
+            return null;  // No moves available
+        }
+
+        // Calculate how many moves to consider from the top
+        int topMovesCount = sortedMoves.size() / 3;  // Top third of moves
+        if (topMovesCount < 1) {
+            topMovesCount = 1;  //make sure if theres one move left then its 1 instead of 0.333333......
+        }
+
+        // Pick a random move from the top moves
+        int randomIndex = random.nextInt(topMovesCount);
+        return sortedMoves.get(randomIndex);
     }
 
-    // Hard AI not finished :(
-    private Board.Move getHardMove(java.util.ArrayList<Board.Move> legalMoves) {
-        return getRandomMove(legalMoves);
+    // Hard AI - picks from the very best moves
+    private Board.Move getHardMove(PieceColour aiColour) {
+        // Get all legal moves sorted from best to worst
+        java.util.ArrayList<Board.Move> sortedMoves = board.getSortedLegalMoves(aiColour);
+        if (sortedMoves.size() == 0) {
+            return null;  // No moves :_[
+        }
+
+        // Decide how many top moves to consider
+        int topMovesToConsider = 2;  // Always pick from top 2 moves so games dont repeat
+        if (sortedMoves.size() < 2) {
+            topMovesToConsider = sortedMoves.size();  // if there is only one move then of course the one move
+        }
+
+        // Pick randomly from the top moves
+        int randomIndex = random.nextInt(topMovesToConsider);
+        return sortedMoves.get(randomIndex);
     }
 
     public void draw(SpriteBatch batch) {

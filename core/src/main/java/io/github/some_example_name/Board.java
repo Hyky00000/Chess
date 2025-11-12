@@ -401,4 +401,209 @@ public class Board {
             this.capturedPiece = capturedPiece;
         }
     }
+
+    // from here on is for AI level 2 and 3 ofcofc
+    public int evaluateMove(Move move, PieceColour aiColour) {
+        int score = 0;  // Each move will start with score 0
+        Piece piece = move.piece;
+
+        // method numero 1 Check if move captures a piece and ADDDD points of captured piece value
+        if (move.capturedPiece != null) {
+            // Get the value of the captured piece ANDDDDD multiply by 10 to make it important
+            int pieceValue = getPieceValue(move.capturedPiece);
+            score = score + (pieceValue * 10);
+        }
+
+        // 2. Check if it's early game for development that extra bonuses :)_
+        boolean earlyGame = isEarlyGame();
+        if (earlyGame) {
+            if (piece.getX() < 1000) {  // If piece is still on the board ofc ofc
+                int currentCol = (int)((piece.getX() - boardX - borderOffsetX) / squareSize);
+                int currentRow = (int)((piece.getY() - boardY - borderOffsetY) / squareSize);
+                int newCol = (int)((move.targetX - boardX - borderOffsetX) / squareSize);
+                int newRow = (int)((move.targetY - boardY - borderOffsetY) / squareSize);
+
+                // Bonus for moving pieces toward the CENTREEE of the board
+                if (newCol >= 2 && newCol <= 5 && newRow >= 2 && newRow <= 5) {
+                    score = score + 3;  // Add 3 points for center control
+                }
+
+                // Bonus for developing knights and bishops early very smart
+                if ((piece instanceof Knight || piece instanceof Bishop) && currentRow <= 1) {
+                    score = score + 2;  // Add 2 points for developing minor pieces
+                }
+            }
+        }
+
+        // 3. Penalty for moving king stupidly INNN the early game
+        if (piece instanceof King) {
+            King kingPiece = (King) piece;
+            if (!kingPiece.hasMoved && earlyGame) {
+                score = score - 2;  // Subtract 2 points for moving the king stupidly
+            }
+        }
+
+        // 4. Bonus for moves that don't leave pieces undefended smart
+        boolean leavesHanging = leavesPieceHanging(piece, move.targetX, move.targetY, aiColour);
+        if (!leavesHanging) {
+            score = score + 2;  // Add 2 points for safe moves
+        }
+
+        // 5. Bonus for piece activity basically more squares controlled silly
+        int activityBonus = calculateActivityBonus(piece, move.targetX, move.targetY);
+        score = score + activityBonus;
+
+        // 6. Special bonus for pawn moves that advance past first 3 rows or something
+        if (piece instanceof Pawn) {
+            int row = (int)((move.targetY - boardY - borderOffsetY) / squareSize);
+            if (aiColour == PieceColour.WHITE && row > 3) {
+                score = score + 1;  // Add 1 point for white pawn advancement
+            }
+            if (aiColour == PieceColour.BLACK && row < 4) {
+                score = score + 1;  // Add 1 point for black pawn advancement
+            }
+        }
+
+        return score;
+    }
+
+    //Get the value of a piece for scoring
+    private int getPieceValue(Piece piece) {
+        if (piece instanceof Pawn) {
+            return 1;  // Pawns are worth 1 point
+        }
+        if (piece instanceof Knight) {
+            return 3;  // Knights are 3
+        }
+        if (piece instanceof Bishop) {
+            return 3;  // Bishops 3
+        }
+        if (piece instanceof Rook) {
+            return 5;  // Rooks 5
+        }
+        if (piece instanceof Queen) {
+            return 9;  // Queens 9
+        }
+        if (piece instanceof King) {
+            return 100;  // Kings are worth 100 points
+        }
+        return 0;
+    }
+
+    //Check if it's early game for the pawn and bishop and knight movess
+    private boolean isEarlyGame() {
+        int capturedPieces = 0;
+        // Count how many pieces have been captured basically by checking the pieces off the board BUT remember if I wanna queue the pieces in a mini queue
+        for (Piece piece : pieces) {
+            if (piece.getX() >= 1000) {
+                capturedPieces = capturedPieces + 1;
+            }
+        }
+        // If there's less than 10 pieces captured then it's still early game
+        return capturedPieces < 10;
+    }
+
+    //Check if move leaves piece undefended
+    private boolean leavesPieceHanging(Piece piece, float targetX, float targetY, PieceColour aiColour) {
+
+        float oldX = piece.getX();
+        float oldY = piece.getY();
+
+        piece.setX(targetX);
+        piece.setY(targetY);
+
+        // Check if any opponent piece can capture this piece at the new position
+        boolean canBeCaptured = false;
+        for (Piece opponentPiece : pieces) {
+            // Only check opponent pieces that are still on the board AGAIn remember if i wanna enqueue mini pieces
+            if (opponentPiece.getColour() != aiColour && opponentPiece.getX() < 1000) {
+                if (opponentPiece.isValidMove(targetX, targetY, this)) {
+                    canBeCaptured = true;
+                    break;  // No need to check if theres even 1
+                }
+            }
+        }
+
+        piece.setX(oldX);
+        piece.setY(oldY);
+
+        return canBeCaptured;
+    }
+
+    // Calculate bonus for piece activity basically the amount of space
+    private int calculateActivityBonus(Piece piece, float targetX, float targetY) {
+        int bonus = 0;
+        int col = (int)((targetX - boardX - borderOffsetX) / squareSize);
+        int row = (int)((targetY - boardY - borderOffsetY) / squareSize);
+
+        // Bonus for controlling center squares
+        if (col >= 3 && col <= 4 && row >= 3 && row <= 4) {
+            bonus = bonus + 2;  // Add 2 points for controlling the centre
+        }
+
+        // bonus for rooks on open files
+        if (piece instanceof Rook) {
+            if (col == 0 || col == 7) {
+                bonus = bonus + 1;  // Add 1 point for controlling edge files
+            }
+        }
+
+        return bonus;
+    }
+
+    // Get all legal moves sorted by quality finallyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy for AI done by getting all the legal moves mhm then making a list to give every move their scores then when they are sorted, they are finally moved onto this new array to be used by the ai
+    public java.util.ArrayList<Move> getSortedLegalMoves(PieceColour colour) {
+
+        // First get all the legal moves
+        java.util.ArrayList<Move> legalMoves = getAllLegalMoves(colour);
+
+        // If no moves available then return empty list and opponent won
+        if (legalMoves.size() == 0) {
+            return legalMoves;
+        }
+
+        // Create yet ANOTHER list to store moves with their scores
+        java.util.ArrayList<MoveWithScore> movesWithScores = new java.util.ArrayList<MoveWithScore>();
+
+        // Calculate score for each move
+        for (int i = 0; i < legalMoves.size(); i++) {
+            Move move = legalMoves.get(i);
+            int score = evaluateMove(move, colour);
+            movesWithScores.add(new MoveWithScore(move, score));
+        }
+
+        // BUBLE SORT so remember to talk about this in the analysis
+        for (int i = 0; i < movesWithScores.size() - 1; i++) {
+            for (int j = 0; j < movesWithScores.size() - i - 1; j++) {
+                MoveWithScore first = movesWithScores.get(j);
+                MoveWithScore second = movesWithScores.get(j + 1);
+
+                // If the first score is less than second score swap them of course
+                if (first.score < second.score) {
+                    movesWithScores.set(j, second);
+                    movesWithScores.set(j + 1, first);
+                }
+            }
+        }
+
+        // Create the final third new list with just the sorted moves
+        java.util.ArrayList<Move> sortedMoves = new java.util.ArrayList<Move>();
+        for (int i = 0; i < movesWithScores.size(); i++) {
+            sortedMoves.add(movesWithScores.get(i).move);
+        }
+
+        return sortedMoves;
+    }
+
+    // NEW HELPER CLASS toooo be used to Store a move with its score
+    private class MoveWithScore {
+        public Move move;
+        public int score;
+
+        public MoveWithScore(Move move, int score) {
+            this.move = move;
+            this.score = score;
+        }
+    }
 }
+
