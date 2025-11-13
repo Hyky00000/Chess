@@ -11,12 +11,15 @@ public class Main extends ApplicationAdapter {
     private Board board;
     private Menu menu;
     private ColourChoice colourChoice;
+    private Difficulty difficulty;
     private int mode = 0;
     float menuChoiceHeight = 55.65861f;
     float menuGapHeight = 14.78852f;
+    float difficultyChoiceHeight = 60.570370370370370370f;
     private boolean playerIsWhite;
 
     private Texture colourChoiceTexture;
+    private Texture difficultyTexture;
     private Texture menuTexture;
     private Texture boardTexture;
     private Texture whitePawnTex, blackPawnTex;
@@ -28,12 +31,13 @@ public class Main extends ApplicationAdapter {
 
     private PlayerVsPlayer pvpGame;
     private PlayerVsComputer pvcGame;
-    private int aiDifficulty = 1;
+    int aiDifficulty;
 
     @Override
     public void create() {
         batch = new SpriteBatch();
 
+        difficultyTexture = new Texture("Difficulty.png");
         colourChoiceTexture = new Texture("ColourChoice.png");
         boardTexture = new Texture("ChessBoard.png");
         menuTexture = new Texture("Menu.png");
@@ -54,6 +58,7 @@ public class Main extends ApplicationAdapter {
         board = new Board(boardTexture, whitePawnTex, blackPawnTex, whiteRookTex, blackRookTex, whiteKnightTex, blackKnightTex, whiteBishopTex, blackBishopTex, whiteQueenTex, blackQueenTex, whiteKingTex, blackKingTex);
         menu = new Menu(menuTexture);
         colourChoice = new ColourChoice(colourChoiceTexture);
+        difficulty = new Difficulty(difficultyTexture);
     }
 
     @Override
@@ -61,7 +66,7 @@ public class Main extends ApplicationAdapter {
         ScreenUtils.clear(0.15f, 0.15f, 0.2f, 1);
         batch.begin();
 
-        //0 is start, 1 is choose colour, 2 is pvp, 3 is vsai
+        //0 is start, 1 is choose colour, 2 is pvp, 3 is vsai, 4 is difficulty
 
         if (mode == 0) {
             board.draw(batch);
@@ -92,8 +97,8 @@ public class Main extends ApplicationAdapter {
                     float clickY = y - colourChoice.getY();
 
                     boolean playerIsWhite = clickY < colourChoice.getHeight() / 2;
-                    pvcGame = new PlayerVsComputer(board, playerIsWhite, aiDifficulty);
-                    mode = 3;
+                    // pvcGame = new PlayerVsComputer(board, playerIsWhite, aiDifficulty);
+                    mode = 4;
                 }
             }
         } else if (mode == 2) {
@@ -109,7 +114,28 @@ public class Main extends ApplicationAdapter {
                 float y = Gdx.graphics.getHeight() - Gdx.input.getY();
                 pvcGame.click(x, y);
             }
+            pvcGame = new PlayerVsComputer(board, playerIsWhite, aiDifficulty);
             pvcGame.draw(batch);
+        } else if (mode == 4) {
+            board.draw(batch);
+            difficulty.draw(batch);
+            if (Gdx.input.justTouched()) {
+                float x = Gdx.input.getX();
+                float y = Gdx.graphics.getHeight() - Gdx.input.getY();
+
+                if ((x > difficulty.getX()) && (x < difficulty.getX() + difficulty.getWidth()) &&
+                    (y < difficulty.getY() + (difficultyChoiceHeight * 3)) && (y > difficulty.getY())) {
+                    aiDifficulty = 1;
+                } else if ((x > difficulty.getX()) && (x < difficulty.getX() + difficulty.getWidth()) &&
+                    (y < difficulty.getY() + (difficultyChoiceHeight * 2)) && (y > difficulty.getY())){
+                    aiDifficulty = 2;
+                } else if ((x > difficulty.getX()) && (x < difficulty.getX() + difficulty.getWidth()) &&
+                    (y < difficulty.getY() + (difficultyChoiceHeight * 1)) && (y > difficulty.getY())) {
+                    aiDifficulty = 3;
+                }
+                //pvcGame = new PlayerVsComputer(board, playerIsWhite, aiDifficulty);
+                mode = 3;
+            }
         }
 
 

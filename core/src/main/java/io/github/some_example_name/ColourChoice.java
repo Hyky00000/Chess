@@ -8,8 +8,8 @@ public class ColourChoice {
     private Texture colourChoiceTexture;
     public static float x = 0;
     public static float y = 74.5f;
-    public float width = 480f;
-    public float height = 267f;
+    public float width = 481f;
+    public float height = 315.8610354f;
 
     public ColourChoice(Texture colourChoiceTexture/*, float x, float y*/) {
         this.x = x;
@@ -60,6 +60,6 @@ public class ColourChoice {
     }
 
     public void draw(SpriteBatch batch) {
-        batch.draw(colourChoiceTexture, x, y);
+        batch.draw(colourChoiceTexture, x, y, width, height);
     }
 }

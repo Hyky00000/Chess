@@ -6,6 +6,7 @@ BlackQueen.png
 BlackRook.png
 ChessBoard.png
 ColourChoice.png
+Difficulty.png
 Menu.png
 WhiteBishop.png
 WhiteKing.png
