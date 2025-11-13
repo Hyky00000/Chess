@@ -16,7 +16,7 @@ public class Main extends ApplicationAdapter {
     float menuChoiceHeight = 55.65861f;
     float menuGapHeight = 14.78852f;
     float difficultyChoiceHeight = 60.570370370370370370f;
-    private boolean playerIsWhite;
+
 
     private Texture colourChoiceTexture;
     private Texture difficultyTexture;
@@ -32,6 +32,7 @@ public class Main extends ApplicationAdapter {
     private PlayerVsPlayer pvpGame;
     private PlayerVsComputer pvcGame;
     int aiDifficulty;
+    boolean playerIsWhite;
 
     @Override
     public void create() {
@@ -95,7 +96,7 @@ public class Main extends ApplicationAdapter {
 
                     float clickY = y - colourChoice.getY();
 
-                    boolean playerIsWhite = clickY < colourChoice.getHeight() / 2;
+                    playerIsWhite = clickY < colourChoice.getHeight() / 2;
 
                     mode = 2;
                 }
@@ -126,6 +127,16 @@ public class Main extends ApplicationAdapter {
                 pvcGame.click(x, y);
             }
             pvcGame = new PlayerVsComputer(board, playerIsWhite, aiDifficulty);
+            if (playerIsWhite){
+                System.out.println("White");
+            } else System.out.println("Black");
+            if (aiDifficulty == 1){
+                System.out.println("Easy");
+            } else if (aiDifficulty == 2){
+                System.out.println("Medium");
+            } else if (aiDifficulty == 3){
+                System.out.println("Hard");
+            }
             pvcGame.draw(batch);
         } else if (mode == 4) {
             if (Gdx.input.justTouched()) {
