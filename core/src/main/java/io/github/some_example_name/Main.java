@@ -66,7 +66,7 @@ public class Main extends ApplicationAdapter {
         ScreenUtils.clear(0.15f, 0.15f, 0.2f, 1);
         batch.begin();
 
-        //0 is start, 1 is choose colour, 2 is pvp, 3 is vsai, 4 is difficulty
+        // 0 is start, 1 is choose colour, 2 is difficulty, 3 is vs ai, 4 is pvp
 
         if (mode == 0) {
             board.draw(batch);
@@ -76,8 +76,7 @@ public class Main extends ApplicationAdapter {
                 float y = Gdx.graphics.getHeight() - Gdx.input.getY();
                 if ((x > menu.getX()) && (x < menu.getX() + menu.getWidth()) &&
                     (y < menu.getY() + menu.getHeight()) && (y > menu.getY() + menu.getHeight() - menuChoiceHeight)) {
-                    mode = 2;
-                    pvpGame = new PlayerVsPlayer(board);
+                    mode = 4;
                 } else if ((x > menu.getX()) && (x < menu.getX() + menu.getWidth()) &&
                     (y < menu.getY() + ((3 * menuChoiceHeight) + (2 * menuGapHeight))) &&
                     (y > menu.getY() + ((2 * menuChoiceHeight) + (2 * menuGapHeight)))) {
@@ -97,26 +96,11 @@ public class Main extends ApplicationAdapter {
                     float clickY = y - colourChoice.getY();
 
                     boolean playerIsWhite = clickY < colourChoice.getHeight() / 2;
-                    // pvcGame = new PlayerVsComputer(board, playerIsWhite, aiDifficulty);
-                    mode = 4;
+
+                    mode = 2;
                 }
             }
         } else if (mode == 2) {
-            if (Gdx.input.justTouched()) {
-                float x = Gdx.input.getX();
-                float y = Gdx.graphics.getHeight() - Gdx.input.getY();
-                pvpGame.click(x, y);
-            }
-            pvpGame.draw(batch);
-        } else if (mode == 3) {
-            if (Gdx.input.justTouched()) {
-                float x = Gdx.input.getX();
-                float y = Gdx.graphics.getHeight() - Gdx.input.getY();
-                pvcGame.click(x, y);
-            }
-            pvcGame = new PlayerVsComputer(board, playerIsWhite, aiDifficulty);
-            pvcGame.draw(batch);
-        } else if (mode == 4) {
             board.draw(batch);
             difficulty.draw(batch);
             if (Gdx.input.justTouched()) {
@@ -127,18 +111,31 @@ public class Main extends ApplicationAdapter {
                     (y < difficulty.getY() + (difficultyChoiceHeight * 3)) && (y > difficulty.getY())) {
                     aiDifficulty = 1;
                 } else if ((x > difficulty.getX()) && (x < difficulty.getX() + difficulty.getWidth()) &&
-                    (y < difficulty.getY() + (difficultyChoiceHeight * 2)) && (y > difficulty.getY())){
+                    (y < difficulty.getY() + (difficultyChoiceHeight * 2)) && (y > difficulty.getY())) {
                     aiDifficulty = 2;
                 } else if ((x > difficulty.getX()) && (x < difficulty.getX() + difficulty.getWidth()) &&
                     (y < difficulty.getY() + (difficultyChoiceHeight * 1)) && (y > difficulty.getY())) {
                     aiDifficulty = 3;
                 }
-                //pvcGame = new PlayerVsComputer(board, playerIsWhite, aiDifficulty);
                 mode = 3;
             }
+        } else if (mode == 3) {
+            if (Gdx.input.justTouched()) {
+                float x = Gdx.input.getX();
+                float y = Gdx.graphics.getHeight() - Gdx.input.getY();
+                pvcGame.click(x, y);
+            }
+            pvcGame = new PlayerVsComputer(board, playerIsWhite, aiDifficulty);
+            pvcGame.draw(batch);
+        } else if (mode == 4) {
+            if (Gdx.input.justTouched()) {
+                float x = Gdx.input.getX();
+                float y = Gdx.graphics.getHeight() - Gdx.input.getY();
+                pvpGame.click(x, y);
+            }
+            pvpGame = new PlayerVsPlayer(board);
+            pvpGame.draw(batch);
         }
-
-
         batch.end();
     }
 

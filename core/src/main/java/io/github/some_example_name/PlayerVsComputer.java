@@ -9,7 +9,7 @@ public class PlayerVsComputer {
     private Piece selectedPiece;
     private boolean pieceSelected = false;
     private boolean playerIsWhite;
-    private int aiDifficulty; // 1 is easy 2 is medium 3 is hard
+    private int aiDifficulty;
     private Random random = new Random();
 
     public PlayerVsComputer(Board board, boolean playerIsWhite, int aiDifficulty) {

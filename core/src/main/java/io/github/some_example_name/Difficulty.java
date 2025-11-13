@@ -7,11 +7,11 @@ public class Difficulty {
 
     private Texture difficultyTexture;
     public static float x = 0;
-    public static float y = 0;
+    public static float y = 118.8592575f;
     public static float width = 481f;
     public static float height = 242.2814815f;
 
-    public Difficulty (Texture DifficultyTexture){
+    public Difficulty (Texture difficultyTexture){
         this.x = x;
         this.y = y;
         this.width = width;
