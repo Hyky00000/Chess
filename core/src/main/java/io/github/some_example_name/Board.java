@@ -62,10 +62,17 @@ public class Board {
         return pieces;
     }
 
-    // Try to make a move and return if successful
     public boolean tryMove(Piece piece, float targetX, float targetY, boolean whiteTurn) {
         if (gameOver) return false;
-        if (piece.getColour() != (whiteTurn ? PieceColour.WHITE : PieceColour.BLACK)) return false;
+        if (whiteTurn == true) {
+            if (piece.getColour() != PieceColour.WHITE) {
+                return false;
+            }
+        } else {
+            if (piece.getColour() != PieceColour.BLACK) {
+                return false;
+            }
+        }
 
         int targetCol = (int)((targetX - boardX - borderOffsetX) / squareSize);
         int targetRow = (int)((targetY - boardY - borderOffsetY) / squareSize);
@@ -74,12 +81,12 @@ public class Board {
         float snapY = boardY + borderOffsetY + targetRow * squareSize;
 
         if (piece.isValidMove(snapX, snapY, this)) {
-            // Save old position in case move puts king in check
+
             float oldX = piece.getX();
             float oldY = piece.getY();
             Piece capturedPiece = null;
 
-            // Check if capturing a piece
+            // check if a piece is being captured so it can be put back if the move turns out to be illegal
             for (int i = 0; i < pieces.length; i++) {
                 if (pieces[i] != piece && pieces[i].getX() < 1000) {
                     int pieceCol = (int)((pieces[i].getX() - boardX - borderOffsetX) / squareSize);
@@ -88,36 +95,75 @@ public class Board {
                         capturedPiece = pieces[i];
                         break;
                     }
-                    //else if ()
                 }
             }
 
-            // Make the move temporarily
+            if (piece instanceof Pawn && capturedPiece == null) {
+                int currentCol = (int)((oldX - boardX - borderOffsetX) / squareSize);
+                int currentRow = (int)((oldY - boardY - borderOffsetY) / squareSize);
+
+                int colDiff = targetCol - currentCol;
+                int rowDiff = targetRow - currentRow;
+
+                // Check if this is a diagonal move for el en passent
+                if (colDiff == 1 || colDiff == -1) {
+                    if (piece.getColour() == PieceColour.WHITE && rowDiff == 1) {
+                        int behindRow = targetRow - 1;
+                        for (Piece p : pieces) {
+                            if (p != piece && p.getX() < 1000 && p instanceof Pawn) {
+                                int pCol = (int)((p.getX() - boardX - borderOffsetX) / squareSize);
+                                int pRow = (int)((p.getY() - boardY - borderOffsetY) / squareSize);
+                                if (pCol == targetCol && pRow == behindRow) {
+                                    Pawn enemyPawn = (Pawn) p;
+                                    if (enemyPawn.justMovedTwoSquares) {
+                                        capturedPiece = p;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    else if (piece.getColour() == PieceColour.BLACK && rowDiff == -1) {
+                        int behindRow = targetRow + 1;
+                        for (Piece p : pieces) {
+                            if (p != piece && p.getX() < 1000 && p instanceof Pawn) {
+                                int pCol = (int)((p.getX() - boardX - borderOffsetX) / squareSize);
+                                int pRow = (int)((p.getY() - boardY - borderOffsetY) / squareSize);
+                                if (pCol == targetCol && pRow == behindRow) {
+                                    Pawn enemyPawn = (Pawn) p;
+                                    if (enemyPawn.justMovedTwoSquares) {
+                                        capturedPiece = p;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
             piece.setX(snapX);
             piece.setY(snapY);
             if (capturedPiece != null) {
                 capturedPiece.setX(1000);
             }
 
-            // Handle castling
+            // if castling then remember that the rook moved
             if (piece instanceof King) {
                 handleCastling((King) piece, oldX, snapX);
             }
 
-            // Track when rook moves
             if (piece instanceof Rook) {
                 ((Rook) piece).hasMoved = true;
             }
 
-            // Check if this move leaves king in check
             boolean inCheck = isKingInCheck(piece.getColour());
-
             if (!inCheck) {
-                // Move is legal - keep it
+
                 checkPawnPromotion(piece, snapY);
                 resetEnPassantFlags(piece.getColour());
 
-                // Check for checkmate or stalemate after move
+                // checkmate stalemate?
                 PieceColour opponentColour = (piece.getColour() == PieceColour.WHITE) ? PieceColour.BLACK : PieceColour.WHITE;
                 if (isCheckmate(opponentColour)) {
                     gameOver = true;
@@ -136,77 +182,52 @@ public class Board {
         return false;
     }
 
-    // Handle castling movement
-    private void handleCastling(King king, float oldX, float newX) {
-        int currentCol = (int)((oldX - boardX - borderOffsetX) / squareSize);
-        int nextCol = (int)((newX - boardX - borderOffsetX) / squareSize);
+    // Make a move for ai as ai already chooses from array of legal moves
+    public void makeMove(Move move) {
+        Piece piece = move.piece;
+        float targetX = move.targetX;
+        float targetY = move.targetY;
+        Piece capturedPiece = move.capturedPiece;
 
-        // Kingside castling
-        if (nextCol == currentCol + 2) {
-            for (Piece rook : pieces) {
-                if (rook instanceof Rook && rook.getColour() == king.getColour() && rook.getX() < 1000) {
-                    Rook castleRook = (Rook) rook;
-                    int rookCol = (int)((rook.getX() - boardX - borderOffsetX) / squareSize);
-                    if (rookCol == 7) {
-                        rook.setX(boardX + borderOffsetX + (5 * squareSize));
-                        castleRook.hasMoved = true;
-                        king.hasMoved = true;
-                        break;
-                    }
-                }
-            }
-        }
-        // Queenside castling
-        else if (nextCol == currentCol - 2) {
-            for (Piece rook : pieces) {
-                if (rook instanceof Rook && rook.getColour() == king.getColour() && rook.getX() < 1000) {
-                    Rook castleRook = (Rook) rook;
-                    int rookCol = (int)((rook.getX() - boardX - borderOffsetX) / squareSize);
-                    if (rookCol == 0) {
-                        rook.setX(boardX + borderOffsetX + (3 * squareSize));
-                        castleRook.hasMoved = true;
-                        king.hasMoved = true;
-                        break;
-                    }
-                }
-            }
-        }
-    }
-
-    // Undo a move
-    private void undoMove(Piece piece, float oldX, float oldY, float newX, float newY, Piece capturedPiece) {
-        piece.setX(oldX);
-        piece.setY(oldY);
+        piece.setX(targetX);
+        piece.setY(targetY);
         if (capturedPiece != null) {
-            capturedPiece.setX(newX);
+            capturedPiece.setX(1000);
         }
-        // Also undo castling if it happened
-        if (piece instanceof King) {
-            King king = (King) piece;
-            int currentCol = (int)((oldX - boardX - borderOffsetX) / squareSize);
-            int nextCol = (int)((newX - boardX - borderOffsetX) / squareSize);
 
-            if (nextCol == currentCol + 2 || nextCol == currentCol - 2) {
-                for (Piece rook : pieces) {
-                    if (rook instanceof Rook && rook.getColour() == piece.getColour()) {
-                        Rook castleRook = (Rook) rook;
-                        int rookCol = (int)((rook.getX() - boardX - borderOffsetX) / squareSize);
-                        if (nextCol == currentCol + 2 && rookCol == 5) {
-                            rook.setX(boardX + borderOffsetX + (7 * squareSize));
-                            castleRook.hasMoved = false;
-                            king.hasMoved = false;
-                        } else if (nextCol == currentCol - 2 && rookCol == 3) {
-                            rook.setX(boardX + borderOffsetX + (0 * squareSize));
-                            castleRook.hasMoved = false;
-                            king.hasMoved = false;
-                        }
-                    }
-                }
+        if (piece instanceof King) {
+            float oldX = piece.getX() - (targetX - piece.getX());
+            handleCastling((King) piece, oldX, targetX);
+        }
+
+        if (piece instanceof Rook) {
+            ((Rook) piece).hasMoved = true;
+        }
+
+        checkPawnPromotion(piece, targetY);
+        resetEnPassantFlags(piece.getColour());
+
+        PieceColour opponentColour;
+        if (piece.getColour() == PieceColour.WHITE) {
+            opponentColour = PieceColour.BLACK;
+        } else {
+            opponentColour = PieceColour.WHITE;
+        }
+
+        if (isCheckmate(opponentColour)) {
+            gameOver = true;
+            if (piece.getColour() == PieceColour.WHITE) {
+                gameResult = "White wins by checkmate!";
+            } else {
+                gameResult = "Black wins by checkmate!";
             }
+        } else if (isStalemate(opponentColour)) {
+            gameOver = true;
+            gameResult = "Draw by stalemate!";
         }
     }
 
-    // Get all legal moves for a color
+
     public java.util.ArrayList<Move> getAllLegalMoves(PieceColour colour) {
         java.util.ArrayList<Move> legalMoves = new java.util.ArrayList<Move>();
 
@@ -264,45 +285,6 @@ public class Board {
         return legalMoves;
     }
 
-    // Make a move (used by AI)
-    public void makeMove(Move move) {
-        Piece piece = move.piece;
-        float targetX = move.targetX;
-        float targetY = move.targetY;
-        Piece capturedPiece = move.capturedPiece;
-
-        piece.setX(targetX);
-        piece.setY(targetY);
-        if (capturedPiece != null) {
-            capturedPiece.setX(1000);
-        }
-
-        // Handle castling
-        if (piece instanceof King) {
-            float oldX = piece.getX() - (targetX - piece.getX());
-            handleCastling((King) piece, oldX, targetX);
-        }
-
-        // Track rook movement
-        if (piece instanceof Rook) {
-            ((Rook) piece).hasMoved = true;
-        }
-
-        checkPawnPromotion(piece, targetY);
-        resetEnPassantFlags(piece.getColour());
-
-        // Check for game end
-        PieceColour opponentColour = (piece.getColour() == PieceColour.WHITE) ? PieceColour.BLACK : PieceColour.WHITE;
-        if (isCheckmate(opponentColour)) {
-            gameOver = true;
-            gameResult = (piece.getColour() == PieceColour.WHITE) ? "White wins by checkmate!" : "Black wins by checkmate!";
-        } else if (isStalemate(opponentColour)) {
-            gameOver = true;
-            gameResult = "Draw by stalemate!";
-        }
-    }
-
-    // Check if king is in check
     public boolean isKingInCheck(PieceColour kingColour) {
         King king = null;
         for (Piece piece : pieces) {
@@ -323,7 +305,6 @@ public class Board {
         return false;
     }
 
-    // Check for checkmate
     public boolean isCheckmate(PieceColour colour) {
         if (!isKingInCheck(colour)) return false;
 
@@ -331,12 +312,78 @@ public class Board {
         return legalMoves.size() == 0;
     }
 
-    // Check for stalemate
     public boolean isStalemate(PieceColour colour) {
         if (isKingInCheck(colour)) return false;
 
         java.util.ArrayList<Move> legalMoves = getAllLegalMoves(colour);
         return legalMoves.size() == 0;
+    }
+
+    private void handleCastling(King king, float oldX, float newX) {
+        int currentCol = (int)((oldX - boardX - borderOffsetX) / squareSize);
+        int nextCol = (int)((newX - boardX - borderOffsetX) / squareSize);
+
+        // Kingside castling
+        if (nextCol == currentCol + 2) {
+            for (Piece rook : pieces) {
+                if (rook instanceof Rook && rook.getColour() == king.getColour() && rook.getX() < 1000) {
+                    Rook castleRook = (Rook) rook;
+                    int rookCol = (int)((rook.getX() - boardX - borderOffsetX) / squareSize);
+                    if (rookCol == 7) {
+                        rook.setX(boardX + borderOffsetX + (5 * squareSize));
+                        castleRook.hasMoved = true;
+                        king.hasMoved = true;
+                        break;
+                    }
+                }
+            }
+        }
+        // Queenside castling
+        else if (nextCol == currentCol - 2) {
+            for (Piece rook : pieces) {
+                if (rook instanceof Rook && rook.getColour() == king.getColour() && rook.getX() < 1000) {
+                    Rook castleRook = (Rook) rook;
+                    int rookCol = (int)((rook.getX() - boardX - borderOffsetX) / squareSize);
+                    if (rookCol == 0) {
+                        rook.setX(boardX + borderOffsetX + (3 * squareSize));
+                        castleRook.hasMoved = true;
+                        king.hasMoved = true;
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    private void undoMove(Piece piece, float oldX, float oldY, float newX, float newY, Piece capturedPiece) {
+        piece.setX(oldX);
+        piece.setY(oldY);
+        if (capturedPiece != null) {
+            capturedPiece.setX(newX);
+        }
+        // Also undo castling if it happened
+        if (piece instanceof King) {
+            King king = (King) piece;
+            int currentCol = (int)((oldX - boardX - borderOffsetX) / squareSize);
+            int nextCol = (int)((newX - boardX - borderOffsetX) / squareSize);
+            if (nextCol == currentCol + 2 || nextCol == currentCol - 2) {
+                for (Piece rook : pieces) {
+                    if (rook instanceof Rook && rook.getColour() == piece.getColour()) {
+                        Rook castleRook = (Rook) rook;
+                        int rookCol = (int)((rook.getX() - boardX - borderOffsetX) / squareSize);
+                        if (nextCol == currentCol + 2 && rookCol == 5) {
+                            rook.setX(boardX + borderOffsetX + (7 * squareSize));
+                            castleRook.hasMoved = false;
+                            king.hasMoved = false;
+                        } else if (nextCol == currentCol - 2 && rookCol == 3) {
+                            rook.setX(boardX + borderOffsetX + (0 * squareSize));
+                            castleRook.hasMoved = false;
+                            king.hasMoved = false;
+                        }
+                    }
+                }
+            }
+        }
     }
 
     // Reset en passant flags
@@ -378,30 +425,6 @@ public class Board {
         }
     }
 
-    public void draw(SpriteBatch batch) {
-        batch.draw(boardTexture, boardX, boardY);
-        for (Piece piece : pieces) {
-            if (piece.getX() < 1000) {
-                piece.draw(batch);
-            }
-        }
-    }
-
-    // Helper class to store al  validated moves
-    public class Move {
-        public Piece piece;
-        public float targetX;
-        public float targetY;
-        public Piece capturedPiece;
-
-        public Move(Piece piece, float targetX, float targetY, Piece capturedPiece) {
-            this.piece = piece;
-            this.targetX = targetX;
-            this.targetY = targetY;
-            this.capturedPiece = capturedPiece;
-        }
-    }
-
     // from here on is for AI level 2 and 3 ofcofc
     public int evaluateMove(Move move, PieceColour aiColour) {
         int score = 0;  // Each move will start with score 0
@@ -409,12 +432,42 @@ public class Board {
 
         // method numero 1 Check if move captures a piece and ADDDD points of captured piece value
         if (move.capturedPiece != null) {
-            // Get the value of the captured piece ANDDDDD multiply by 10 to make it important
+            // Get the value of the captured piece ANDDDDD multiply by 20 to make it important
             int pieceValue = getPieceValue(move.capturedPiece);
-            score = score + (pieceValue * 10);
+            score = score + (pieceValue * 20);
         }
 
-        // 2. Check if it's early game for development that extra bonuses :)_
+        //  CRITICAL: Check if move leaves our piece undefended and can be captured
+        boolean leavesHanging = leavesPieceHanging(piece, move.targetX, move.targetY, aiColour);
+        if (leavesHanging) {
+            int ourPieceValue = getPieceValue(piece);
+            score -= (ourPieceValue * 25); // BIG penalty for hanging our piece
+        }
+
+        // Check if the destination square is attacked by opponent
+        boolean squareIsAttacked = isSquareAttacked(move.targetX, move.targetY, aiColour);
+        if (squareIsAttacked) {
+            // If moving to attacked square, check if we're trading equally or losing material
+            int attackerValue = findSmallestAttackerValue(move.targetX, move.targetY, aiColour);
+            int ourPieceValue = getPieceValue(piece);
+
+            if (ourPieceValue > attackerValue) {
+                // We're losing material! BIG penalty
+                score -= (ourPieceValue - attackerValue) * 30;
+            } else if (ourPieceValue == attackerValue) {
+                // Equal trade - small penalty since we're moving into capture
+                score -= 5;
+            }
+            // If our piece is worth less than attacker, it's actually good trade
+        }
+
+        // Check if move creates a threat (attacks undefended piece)
+        boolean createsThreat = createsNewThreat(piece, move.targetX, move.targetY, aiColour);
+        if (createsThreat) {
+            score += 15; // Bonus for creating threats
+        }
+
+        // Check if it's early game for development that extra bonuses :)_
         boolean earlyGame = isEarlyGame();
         if (earlyGame) {
             if (piece.getX() < 1000) {  // If piece is still on the board ofc ofc
@@ -435,7 +488,7 @@ public class Board {
             }
         }
 
-        // 3. Penalty for moving king stupidly INNN the early game
+        // Penalty for moving king stupidly INNN the early game
         if (piece instanceof King) {
             King kingPiece = (King) piece;
             if (!kingPiece.hasMoved && earlyGame) {
@@ -443,17 +496,11 @@ public class Board {
             }
         }
 
-        // 4. Bonus for moves that don't leave pieces undefended smart
-        boolean leavesHanging = leavesPieceHanging(piece, move.targetX, move.targetY, aiColour);
-        if (!leavesHanging) {
-            score = score + 2;  // Add 2 points for safe moves
-        }
-
-        // 5. Bonus for piece activity basically more squares controlled silly
+        // Bonus for piece activity basically more squares controlled silly
         int activityBonus = calculateActivityBonus(piece, move.targetX, move.targetY);
         score = score + activityBonus;
 
-        // 6. Special bonus for pawn moves that advance past first 3 rows or something
+        //  Special bonus for pawn moves that advance past first 3 rows or something
         if (piece instanceof Pawn) {
             int row = (int)((move.targetY - boardY - borderOffsetY) / squareSize);
             if (aiColour == PieceColour.WHITE && row > 3) {
@@ -595,6 +642,103 @@ public class Board {
         return sortedMoves;
     }
 
+    // Check if a square is defended by own pieces
+    private boolean isSquareDefended(float squareX, float squareY, PieceColour defenderColour) {
+        for (Piece piece : pieces) {
+            if (piece.getColour() == defenderColour && piece.getX() < 1000) {
+                if (piece.isValidMove(squareX, squareY, this)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    // Check if move creates a new threat (attacks undefended opponent piece)
+    private boolean createsNewThreat(Piece piece, float targetX, float targetY, PieceColour aiColour) {
+        // Save original position
+        float oldX = piece.getX();
+        float oldY = piece.getY();
+
+        // Temporarily move the piece
+        piece.setX(targetX);
+        piece.setY(targetY);
+
+        boolean createsThreat = false;
+
+        // Check if we now attack any opponent pieces that aren't defended
+        for (Piece opponentPiece : pieces) {
+            if (opponentPiece.getColour() != aiColour && opponentPiece.getX() < 1000) {
+                if (piece.isValidMove(opponentPiece.getX(), opponentPiece.getY(), this)) {
+                    // Check if this opponent piece is defended
+                    boolean isDefended = isSquareDefended(opponentPiece.getX(), opponentPiece.getY(), opponentPiece.getColour());
+                    if (!isDefended) {
+                        createsThreat = true;
+                        break;
+                    }
+                }
+            }
+        }
+
+        // Restore position
+        piece.setX(oldX);
+        piece.setY(oldY);
+
+        return createsThreat;
+    }
+
+    // Check if the destination square is attacked by opponent
+    private boolean isSquareAttacked(float squareX, float squareY, PieceColour defenderColour) {
+        for (Piece piece : pieces) {
+            if (piece.getColour() != defenderColour && piece.getX() < 1000) {
+                if (piece.isValidMove(squareX, squareY, this)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    // Find the value of the smallest piece attacking a square
+    private int findSmallestAttackerValue(float squareX, float squareY, PieceColour defenderColour) {
+        int smallestValue = 100; // Start high
+        for (Piece piece : pieces) {
+            if (piece.getColour() != defenderColour && piece.getX() < 1000) {
+                if (piece.isValidMove(squareX, squareY, this)) {
+                    int value = getPieceValue(piece);
+                    if (value < smallestValue) {
+                        smallestValue = value;
+                    }
+                }
+            }
+        }
+        return smallestValue;
+    }
+
+    public void draw(SpriteBatch batch) {
+        batch.draw(boardTexture, boardX, boardY);
+        for (Piece piece : pieces) {
+            if (piece.getX() < 1000) {
+                piece.draw(batch);
+            }
+        }
+    }
+
+    // Helper class to store al  validated moves
+    public class Move {
+        public Piece piece;
+        public float targetX;
+        public float targetY;
+        public Piece capturedPiece;
+
+        public Move(Piece piece, float targetX, float targetY, Piece capturedPiece) {
+            this.piece = piece;
+            this.targetX = targetX;
+            this.targetY = targetY;
+            this.capturedPiece = capturedPiece;
+        }
+    }
+
     // NEW HELPER CLASS toooo be used to Store a move with its score
     private class MoveWithScore {
         public Move move;
@@ -606,4 +750,3 @@ public class Board {
         }
     }
 }
-

@@ -121,30 +121,24 @@ public class Main extends ApplicationAdapter {
                 mode = 3;
             }
         } else if (mode == 3) {
+            if (pvcGame == null) {
+                pvcGame = new PlayerVsComputer(board, playerIsWhite, aiDifficulty);
+            }
             if (Gdx.input.justTouched()) {
                 float x = Gdx.input.getX();
                 float y = Gdx.graphics.getHeight() - Gdx.input.getY();
                 pvcGame.click(x, y);
             }
-            pvcGame = new PlayerVsComputer(board, playerIsWhite, aiDifficulty);
-            if (playerIsWhite){
-                System.out.println("White");
-            } else System.out.println("Black");
-            if (aiDifficulty == 1){
-                System.out.println("Easy");
-            } else if (aiDifficulty == 2){
-                System.out.println("Medium");
-            } else if (aiDifficulty == 3){
-                System.out.println("Hard");
-            }
             pvcGame.draw(batch);
         } else if (mode == 4) {
+            if (pvpGame == null) {
+                pvpGame = new PlayerVsPlayer(board);
+            }
             if (Gdx.input.justTouched()) {
                 float x = Gdx.input.getX();
                 float y = Gdx.graphics.getHeight() - Gdx.input.getY();
                 pvpGame.click(x, y);
             }
-            pvpGame = new PlayerVsPlayer(board);
             pvpGame.draw(batch);
         }
         batch.end();

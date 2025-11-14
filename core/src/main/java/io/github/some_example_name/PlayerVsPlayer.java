@@ -32,7 +32,6 @@ public class PlayerVsPlayer {
                 }
             }
         } else {
-            // move the selected piece
             boolean moveSuccessful = board.tryMove(selectedPiece, x, y, whiteTurn);
             if (moveSuccessful) {
                 whiteTurn = !whiteTurn;
