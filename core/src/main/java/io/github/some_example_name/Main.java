@@ -11,13 +11,17 @@ public class Main extends ApplicationAdapter {
     private Board board;
     private Menu menu;
     private ColourChoice colourChoice;
+    private WhitePromotion whitePromotion;
+    private BlackPromotion blackPromotion;
     private Difficulty difficulty;
     private int mode = 0;
     float menuChoiceHeight = 55.65861f;
     float menuGapHeight = 14.78852f;
     float difficultyChoiceHeight = 60.570370370370370370f;
+    private float promotionGap = 54.5f;
 
-
+    private Texture whitePromotionTexture;
+    private Texture blackPromotionTexture;
     private Texture colourChoiceTexture;
     private Texture difficultyTexture;
     private Texture menuTexture;
@@ -38,6 +42,8 @@ public class Main extends ApplicationAdapter {
     public void create() {
         batch = new SpriteBatch();
 
+        whitePromotionTexture = new Texture("WhitePromotion.png");
+        blackPromotionTexture = new Texture("BlackPromotion.png");
         difficultyTexture = new Texture("Difficulty.png");
         colourChoiceTexture = new Texture("ColourChoice.png");
         boardTexture = new Texture("ChessBoard.png");
@@ -60,6 +66,8 @@ public class Main extends ApplicationAdapter {
         menu = new Menu(menuTexture);
         colourChoice = new ColourChoice(colourChoiceTexture);
         difficulty = new Difficulty(difficultyTexture);
+        whitePromotion = new WhitePromotion(whitePromotionTexture);
+        blackPromotion = new BlackPromotion(blackPromotionTexture);
     }
 
     @Override
@@ -67,11 +75,13 @@ public class Main extends ApplicationAdapter {
         ScreenUtils.clear(0.15f, 0.15f, 0.2f, 1);
         batch.begin();
 
-        // 0 is start, 1 is choose colour, 2 is difficulty, 3 is vs ai, 4 is pvp
+        // 0 is start, 1 is choose colour, 2 is difficulty, 3 is vs ai, 4 is pvp, 5 is pawn promotion.
 
         if (mode == 0) {
             board.draw(batch);
             menu.draw(batch);
+            whitePromotion.draw(batch);
+            blackPromotion.draw(batch);
             if (Gdx.input.justTouched()) {
                 float x = Gdx.input.getX();
                 float y = Gdx.graphics.getHeight() - Gdx.input.getY();
@@ -141,6 +151,28 @@ public class Main extends ApplicationAdapter {
             }
             pvpGame.draw(batch);
         }
+
+        /* else if (mode == 5){
+            board.draw(batch);
+            whitePromotion.draw(batch);
+
+
+           if (Gdx.input.justTouched()) {
+                float x = Gdx.input.getX();
+                float y = Gdx.graphics.getHeight() - Gdx.input.getY();
+
+           if (x < white......)
+
+
+
+        } */
+
+
+
+
+
+
+
         batch.end();
     }
 
@@ -165,3 +197,7 @@ public class Main extends ApplicationAdapter {
 }
 // Finished working is control+k then write what I changed then commit and push
 // Starting work is control+t then merge then pull
+
+
+
+

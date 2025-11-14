@@ -2,6 +2,7 @@ BlackBishop.png
 BlackKing.png
 BlackKnight.png
 BlackPawn.png
+BlackPromotion.png
 BlackQueen.png
 BlackRook.png
 ChessBoard.png
@@ -12,6 +13,7 @@ WhiteBishop.png
 WhiteKing.png
 WhiteKnight.png
 WhitePawn.png
+WhitePromotion.png
 WhiteQueen.png
 WhiteRook.png
 libgdx.png

@@ -14,6 +14,10 @@ public class Board {
     private Texture blackQueenTex;
     public boolean gameOver = false;
     public String gameResult = "";
+    int whitePCaptured;
+    int blackPCaptured;
+    public boolean whitePromotion;
+    public boolean blackPromotion;
 
     public Board(Texture boardTexture, Texture whitePawnTex, Texture blackPawnTex, Texture whiteRookTex, Texture blackRookTex, Texture whiteKnightTex, Texture blackKnightTex, Texture whiteBishopTex, Texture blackBishopTex, Texture whiteQueenTex, Texture blackQueenTex, Texture whiteKingTex, Texture blackKingTex) {
 
@@ -146,6 +150,20 @@ public class Board {
             piece.setY(snapY);
             if (capturedPiece != null) {
                 capturedPiece.setX(1000);
+                if (capturedPiece.getColour() == PieceColour.WHITE){
+                    whitePCaptured += 1;
+                } else if (capturedPiece.getColour() == PieceColour.BLACK) {
+                    blackPCaptured += 1;
+                }
+            }
+
+            for (Piece p: pieces){
+                if (p.getX() > 500);
+                if (p.getColour() == PieceColour.WHITE){
+                    for (int i = 0; i < whitePCaptured; i++){
+
+                    }
+                }
             }
 
             // if castling then remember that the rook moved
@@ -161,6 +179,11 @@ public class Board {
             if (!inCheck) {
 
                 checkPawnPromotion(piece, snapY);
+                if (whitePromotion == true){
+
+                } else if (blackPromotion == true) {
+
+                }
                 resetEnPassantFlags(piece.getColour());
 
                 // checkmate stalemate?
@@ -401,10 +424,13 @@ public class Board {
             int row = (int)((nextY - boardY - borderOffsetY) / squareSize);
 
             if (piece.getColour() == PieceColour.WHITE && row == 7) {
-                promotePawnToQueen(piece);
+                whitePromotion = true;
+                //promotePawnToQueen(piece);
+
             }
             else if (piece.getColour() == PieceColour.BLACK && row == 0) {
-                promotePawnToQueen(piece);
+                blackPromotion = true;
+                //promotePawnToQueen(piece);
             }
         }
     }
@@ -517,22 +543,22 @@ public class Board {
     //Get the value of a piece for scoring
     private int getPieceValue(Piece piece) {
         if (piece instanceof Pawn) {
-            return 1;  // Pawns are worth 1 point
+            return 1;
         }
         if (piece instanceof Knight) {
-            return 3;  // Knights are 3
+            return 3;
         }
         if (piece instanceof Bishop) {
-            return 3;  // Bishops 3
+            return 3;
         }
         if (piece instanceof Rook) {
-            return 5;  // Rooks 5
+            return 5;
         }
         if (piece instanceof Queen) {
-            return 9;  // Queens 9
+            return 9;
         }
         if (piece instanceof King) {
-            return 100;  // Kings are worth 100 points
+            return 100;
         }
         return 0;
     }

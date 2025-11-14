@@ -53,7 +53,6 @@ public class PlayerVsComputer {
                 // If its computers turn then it makes a move
                 if (!board.gameOver && ((playerIsWhite && !whiteTurn) || (!playerIsWhite && whiteTurn))) {
                     makeAIMove();
-                    System.out.println("testing ai move");
                 }
             }
             pieceSelected = false;
