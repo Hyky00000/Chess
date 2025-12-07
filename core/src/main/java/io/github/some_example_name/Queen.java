@@ -15,7 +15,7 @@ public class Queen extends Piece {
         int changeX = nextCol - currentCol;
         int changeY = nextRow - currentRow;
 
-        if (changeX == 0 && changeY == 0) {
+        if (changeX == 0 && changeY  == 0) {
             return false;
         }
 

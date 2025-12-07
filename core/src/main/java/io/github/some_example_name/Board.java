@@ -435,7 +435,7 @@ public class Board {
         }
     }
 
-    private void promotePawnToQueen(Piece pawn) {
+    private void promotePawnToQueen(Piece pawn, float X, float Y, boolean whiteTurn) {
         for (int i = 0; i < pieces.length; i++) {
             if (pieces[i] == pawn) {
                 Texture queenTexture;

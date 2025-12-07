@@ -80,8 +80,8 @@ public class Main extends ApplicationAdapter {
         if (mode == 0) {
             board.draw(batch);
             menu.draw(batch);
-            whitePromotion.draw(batch);
-            blackPromotion.draw(batch);
+            //whitePromotion.draw(batch);
+            //blackPromotion.draw(batch);
             if (Gdx.input.justTouched()) {
                 float x = Gdx.input.getX();
                 float y = Gdx.graphics.getHeight() - Gdx.input.getY();
