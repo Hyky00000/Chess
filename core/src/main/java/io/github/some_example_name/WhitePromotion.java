@@ -33,7 +33,7 @@ public class WhitePromotion {
     }
 
     public static void setX(float x) {
-        BlackPromotion.x = x;
+        WhitePromotion.x = x;
     }
 
     public static float getY() {
@@ -41,7 +41,7 @@ public class WhitePromotion {
     }
 
     public static void setY(float y) {
-        BlackPromotion.y = y;
+        WhitePromotion.y = y;
     }
 
     public float getWidth() {

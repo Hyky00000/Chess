@@ -3,6 +3,7 @@ import com.badlogic.gdx.graphics.Texture;
 
 public class Pawn extends Piece {
     public boolean justMovedTwoSquares = false;
+    public boolean wasLastMove = false;
 
     public Pawn(float x, float y, float width, float height, PieceColour colour, Texture texture) {
         super(x, y, width, height, colour, texture);
@@ -57,16 +58,15 @@ public class Pawn extends Piece {
                 }
 
                 //white en passant capture
+                int enemyRow = currentRow;
                 for (Piece piece : board.getPieces()) {
-                    if (piece.getColour() == PieceColour.BLACK) {
-                        int pieceCol = (int)((piece.getX() - board.boardX - board.borderOffsetX) / board.squareSize);
-                        int pieceRow = (int)((piece.getY() - board.boardY - board.borderOffsetY) / board.squareSize);
-                        if (pieceCol == nextCol && pieceRow == currentRow) {
-                            if (piece instanceof Pawn) {
-                                Pawn blackPawn = (Pawn) piece;
-                                if (blackPawn.justMovedTwoSquares) {
-                                    return true;
-                                }
+                    if (piece.getColour() == PieceColour.BLACK && piece instanceof Pawn) {
+                        int pieceCol = (int) ((piece.getX() - board.boardX - board.borderOffsetX) / board.squareSize);
+                        int pieceRow = (int) ((piece.getY() - board.boardY - board.borderOffsetY) / board.squareSize);
+                        if (pieceCol == nextCol && pieceRow == enemyRow) {
+                            Pawn enemyPawn = (Pawn) piece;
+                            if (enemyPawn.justMovedTwoSquares && enemyPawn.wasLastMove) {
+                                return true;
                             }
                         }
                     }
@@ -114,16 +114,15 @@ public class Pawn extends Piece {
                 }
 
                 // black en passent
+                int enemyRow = currentRow;
                 for (Piece piece : board.getPieces()) {
-                    if (piece.getColour() == PieceColour.WHITE) {
-                        int pieceCol = (int)((piece.getX() - board.boardX - board.borderOffsetX) / board.squareSize);
-                        int pieceRow = (int)((piece.getY() - board.boardY - board.borderOffsetY) / board.squareSize);
-                        if (pieceCol == nextCol && pieceRow == currentRow) {
-                            if (piece instanceof Pawn) {
-                                Pawn whitePawn = (Pawn) piece;
-                                if (whitePawn.justMovedTwoSquares) {
-                                    return true;
-                                }
+                    if (piece.getColour() == PieceColour.WHITE && piece instanceof Pawn) {
+                        int pieceCol = (int) ((piece.getX() - board.boardX - board.borderOffsetX) / board.squareSize);
+                        int pieceRow = (int) ((piece.getY() - board.boardY - board.borderOffsetY) / board.squareSize);
+                        if (pieceCol == nextCol && pieceRow == enemyRow) {
+                            Pawn enemyPawn = (Pawn) piece;
+                            if (enemyPawn.justMovedTwoSquares && enemyPawn.wasLastMove) {
+                                return true;
                             }
                         }
                     }

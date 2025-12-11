@@ -12,12 +12,23 @@ public class Board {
     public float boardY = 0f;
     private Texture whiteQueenTex;
     private Texture blackQueenTex;
+    private Texture whiteRookTex;
+    private Texture blackRookTex;
+    private Texture whiteBishopTex;
+    private Texture blackBishopTex;
+    private Texture whiteKnightTex;
+    private Texture blackKnightTex;
     public boolean gameOver = false;
     public String gameResult = "";
     int whitePCaptured;
     int blackPCaptured;
-    public boolean whitePromotion;
-    public boolean blackPromotion;
+    //public boolean whitePromotion;
+    //public boolean blackPromotion;
+
+    public Piece promotingPawn = null;
+    public boolean whiteTurn = true;
+    private Piece lastMovedPiece = null;
+
 
     public Board(Texture boardTexture, Texture whitePawnTex, Texture blackPawnTex, Texture whiteRookTex, Texture blackRookTex, Texture whiteKnightTex, Texture blackKnightTex, Texture whiteBishopTex, Texture blackBishopTex, Texture whiteQueenTex, Texture blackQueenTex, Texture whiteKingTex, Texture blackKingTex) {
 
@@ -68,6 +79,11 @@ public class Board {
 
     public boolean tryMove(Piece piece, float targetX, float targetY, boolean whiteTurn) {
         if (gameOver) return false;
+
+        if (promotingPawn != null) return false;
+
+        this.whiteTurn = whiteTurn;
+
         if (whiteTurn == true) {
             if (piece.getColour() != PieceColour.WHITE) {
                 return false;
@@ -103,41 +119,49 @@ public class Board {
             }
 
             if (piece instanceof Pawn && capturedPiece == null) {
-                int currentCol = (int)((oldX - boardX - borderOffsetX) / squareSize);
-                int currentRow = (int)((oldY - boardY - borderOffsetY) / squareSize);
+                int currentCol = (int) ((oldX - boardX - borderOffsetX) / squareSize);
+                int currentRow = (int) ((oldY - boardY - borderOffsetY) / squareSize);
 
                 int colDiff = targetCol - currentCol;
                 int rowDiff = targetRow - currentRow;
 
-                // Check if this is a diagonal move for el en passent
-                if (colDiff == 1 || colDiff == -1) {
-                    if (piece.getColour() == PieceColour.WHITE && rowDiff == 1) {
-                        int behindRow = targetRow - 1;
+
+                if (piece.getColour() == PieceColour.WHITE) {
+                    if (rowDiff == 1 && (colDiff == 1 || colDiff == -1)) {
+                        int enemyRow = targetRow - 1;
                         for (Piece p : pieces) {
                             if (p != piece && p.getX() < 1000 && p instanceof Pawn) {
                                 int pCol = (int)((p.getX() - boardX - borderOffsetX) / squareSize);
                                 int pRow = (int)((p.getY() - boardY - borderOffsetY) / squareSize);
-                                if (pCol == targetCol && pRow == behindRow) {
-                                    Pawn enemyPawn = (Pawn) p;
-                                    if (enemyPawn.justMovedTwoSquares) {
-                                        capturedPiece = p;
-                                        break;
+                                if (pCol == targetCol && pRow == enemyRow) {
+                                    if (p.getColour() == PieceColour.BLACK) {
+                                        Pawn enemyPawn = (Pawn) p;
+                                        if (enemyPawn.justMovedTwoSquares == true) {
+                                            capturedPiece = p;
+                                            break;
+                                        }
                                     }
                                 }
                             }
                         }
                     }
-                    else if (piece.getColour() == PieceColour.BLACK && rowDiff == -1) {
-                        int behindRow = targetRow + 1;
+                }
+
+
+                if (piece.getColour() == PieceColour.BLACK) {
+                    if (rowDiff == -1 && (colDiff == 1 || colDiff == -1)) {
+                        int enemyRow = targetRow + 1;
                         for (Piece p : pieces) {
                             if (p != piece && p.getX() < 1000 && p instanceof Pawn) {
                                 int pCol = (int)((p.getX() - boardX - borderOffsetX) / squareSize);
                                 int pRow = (int)((p.getY() - boardY - borderOffsetY) / squareSize);
-                                if (pCol == targetCol && pRow == behindRow) {
-                                    Pawn enemyPawn = (Pawn) p;
-                                    if (enemyPawn.justMovedTwoSquares) {
-                                        capturedPiece = p;
-                                        break;
+                                if (pCol == targetCol && pRow == enemyRow) {
+                                    if (p.getColour() == PieceColour.WHITE) {
+                                        Pawn enemyPawn = (Pawn) p;
+                                        if (enemyPawn.justMovedTwoSquares == true) {
+                                            capturedPiece = p;
+                                            break;
+                                        }
                                     }
                                 }
                             }
@@ -148,6 +172,7 @@ public class Board {
 
             piece.setX(snapX);
             piece.setY(snapY);
+            lastMovedPiece = piece;
             if (capturedPiece != null) {
                 capturedPiece.setX(1000);
                 if (capturedPiece.getColour() == PieceColour.WHITE){
@@ -157,14 +182,6 @@ public class Board {
                 }
             }
 
-            for (Piece p: pieces){
-                if (p.getX() > 500);
-                if (p.getColour() == PieceColour.WHITE){
-                    for (int i = 0; i < whitePCaptured; i++){
-
-                    }
-                }
-            }
 
             // if castling then remember that the rook moved
             if (piece instanceof King) {
@@ -179,14 +196,9 @@ public class Board {
             if (!inCheck) {
 
                 checkPawnPromotion(piece, snapY);
-                if (whitePromotion == true){
-
-                } else if (blackPromotion == true) {
-
-                }
                 resetEnPassantFlags(piece.getColour());
 
-                // checkmate stalemate?
+                // checkmate stalemate
                 PieceColour opponentColour = (piece.getColour() == PieceColour.WHITE) ? PieceColour.BLACK : PieceColour.WHITE;
                 if (isCheckmate(opponentColour)) {
                     gameOver = true;
@@ -214,6 +226,18 @@ public class Board {
 
         piece.setX(targetX);
         piece.setY(targetY);
+
+        if (piece instanceof Pawn) {
+            int row = (int)((targetY - boardY - borderOffsetY) / squareSize);
+            if (piece.getColour() == PieceColour.WHITE && row == 7) {
+                promotePawn(piece, 0, whiteQueenTex, whiteRookTex, whiteBishopTex, whiteKnightTex);
+            }
+            else if (piece.getColour() == PieceColour.BLACK && row == 0) {
+                promotePawn(piece, 0, blackQueenTex, blackRookTex, blackBishopTex, blackKnightTex);
+            }
+        }
+
+
         if (capturedPiece != null) {
             capturedPiece.setX(1000);
         }
@@ -227,7 +251,6 @@ public class Board {
             ((Rook) piece).hasMoved = true;
         }
 
-        checkPawnPromotion(piece, targetY);
         resetEnPassantFlags(piece.getColour());
 
         PieceColour opponentColour;
@@ -316,7 +339,9 @@ public class Board {
                 break;
             }
         }
-        if (king == null) return false;
+        if (king == null) {
+            return false;
+        }
 
         for (Piece piece : pieces) {
             if (piece.getColour() != kingColour && piece.getX() < 1000) {
@@ -412,8 +437,25 @@ public class Board {
     // Reset en passant flags
     private void resetEnPassantFlags(PieceColour colour) {
         for (Piece piece : pieces) {
-            if (piece instanceof Pawn && piece.getColour() != colour) {
-                ((Pawn) piece).justMovedTwoSquares = false;
+            if (piece instanceof Pawn) {
+                Pawn pawn = (Pawn) piece;
+                pawn.wasLastMove = false;
+            }
+        }
+
+        if (lastMovedPiece instanceof Pawn) {
+            Pawn lastPawn = (Pawn) lastMovedPiece;
+            if (lastPawn.justMovedTwoSquares == true) {
+                lastPawn.wasLastMove = true;
+            }
+        }
+
+        for (Piece piece : pieces) {
+            if (piece instanceof Pawn) {
+                Pawn pawn = (Pawn) piece;
+                if (pawn.getColour() != colour) {
+                    pawn.justMovedTwoSquares = false;
+                }
             }
         }
     }
@@ -424,28 +466,57 @@ public class Board {
             int row = (int)((nextY - boardY - borderOffsetY) / squareSize);
 
             if (piece.getColour() == PieceColour.WHITE && row == 7) {
-                whitePromotion = true;
+                promotingPawn = piece;
                 //promotePawnToQueen(piece);
 
             }
             else if (piece.getColour() == PieceColour.BLACK && row == 0) {
-                blackPromotion = true;
+                promotingPawn = piece;
                 //promotePawnToQueen(piece);
             }
         }
     }
 
-    private void promotePawnToQueen(Piece pawn, float X, float Y, boolean whiteTurn) {
+    public void promotePawn(Piece pawn, int choice, Texture queenTex, Texture rookTex, Texture bishopTex, Texture knightTex) {
         for (int i = 0; i < pieces.length; i++) {
             if (pieces[i] == pawn) {
-                Texture queenTexture;
-                if (pawn.getColour() == PieceColour.WHITE) {
-                    queenTexture = whiteQueenTex;
-                } else {
-                    queenTexture = blackQueenTex;
+                Texture newTexture;
+                Piece newPiece;
+                float x = pawn.getX();
+                float y = pawn.getY();
+                float width = pawn.getWidth();
+                float height = pawn.getHeight();
+                PieceColour colour = pawn.getColour();
+
+                // choice 0 is Queen, 1 is Rook, 2 is Bishop, 3 is Knight
+                if (choice == 0) {
+                    // Queen
+                    newTexture = queenTex;
+                    newPiece = new Queen(x, y, width, height, colour, newTexture);
                 }
-                Queen newQueen = new Queen(pawn.getX(), pawn.getY(), pawn.getWidth(), pawn.getHeight(), pawn.getColour(), queenTexture);
-                pieces[i] = newQueen;
+                else if (choice == 1) {
+                    // Rook
+                    newTexture = rookTex;
+                    newPiece = new Rook(x, y, width, height, colour, newTexture);
+                }
+                else if (choice == 2) {
+                    // Bishop
+                    newTexture = bishopTex;
+                    newPiece = new Bishop(x, y, width, height, colour, newTexture);
+                }
+                else if (choice == 3) {
+                    // Knight
+                    newTexture = knightTex;
+                    newPiece = new Knight(x, y, width, height, colour, newTexture);
+                }
+                else {
+                    // Queen just incase
+                    newTexture = queenTex;
+                    newPiece = new Queen(x, y, width, height, colour, newTexture);
+                }
+
+                pieces[i] = newPiece;
+                promotingPawn = null;
                 break;
             }
         }

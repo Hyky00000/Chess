@@ -38,6 +38,11 @@ public class Main extends ApplicationAdapter {
     int aiDifficulty;
     boolean playerIsWhite;
 
+    private Piece promotingPawn = null;
+    private boolean isWhitePromotion = false;
+    private float promotionMenuX, promotionMenuY;
+    private int previousMode = 0;
+
     @Override
     public void create() {
         batch = new SpriteBatch();
@@ -80,14 +85,13 @@ public class Main extends ApplicationAdapter {
         if (mode == 0) {
             board.draw(batch);
             menu.draw(batch);
-            //whitePromotion.draw(batch);
-            //blackPromotion.draw(batch);
             if (Gdx.input.justTouched()) {
                 float x = Gdx.input.getX();
                 float y = Gdx.graphics.getHeight() - Gdx.input.getY();
                 if ((x > menu.getX()) && (x < menu.getX() + menu.getWidth()) &&
                     (y < menu.getY() + menu.getHeight()) && (y > menu.getY() + menu.getHeight() - menuChoiceHeight)) {
                     mode = 4;
+                    pvpGame = new PlayerVsPlayer(board);
                 } else if ((x > menu.getX()) && (x < menu.getX() + menu.getWidth()) &&
                     (y < menu.getY() + ((3 * menuChoiceHeight) + (2 * menuGapHeight))) &&
                     (y > menu.getY() + ((2 * menuChoiceHeight) + (2 * menuGapHeight)))) {
@@ -121,57 +125,138 @@ public class Main extends ApplicationAdapter {
                 if ((x > difficulty.getX()) && (x < difficulty.getX() + difficulty.getWidth()) &&
                     (y < difficulty.getY() + (difficultyChoiceHeight * 3)) && (y > difficulty.getY())) {
                     aiDifficulty = 1;
+                    mode = 3;
                 } else if ((x > difficulty.getX()) && (x < difficulty.getX() + difficulty.getWidth()) &&
                     (y < difficulty.getY() + (difficultyChoiceHeight * 2)) && (y > difficulty.getY())) {
                     aiDifficulty = 2;
+                    mode = 3;
                 } else if ((x > difficulty.getX()) && (x < difficulty.getX() + difficulty.getWidth()) &&
                     (y < difficulty.getY() + (difficultyChoiceHeight * 1)) && (y > difficulty.getY())) {
                     aiDifficulty = 3;
+                    mode = 3;
                 }
-                mode = 3;
             }
         } else if (mode == 3) {
             if (pvcGame == null) {
                 pvcGame = new PlayerVsComputer(board, playerIsWhite, aiDifficulty);
             }
-            if (Gdx.input.justTouched()) {
-                float x = Gdx.input.getX();
-                float y = Gdx.graphics.getHeight() - Gdx.input.getY();
-                pvcGame.click(x, y);
+
+            if (board.promotingPawn != null) {
+                promotingPawn = board.promotingPawn;
+                isWhitePromotion = (promotingPawn.getColour() == PieceColour.WHITE);
+                previousMode = 3;
+                mode = 5;
+            } else {
+                if (Gdx.input.justTouched()) {
+                    float x = Gdx.input.getX();
+                    float y = Gdx.graphics.getHeight() - Gdx.input.getY();
+                    pvcGame.click(x, y);
+                }
+                pvcGame.draw(batch);
             }
-            pvcGame.draw(batch);
         } else if (mode == 4) {
             if (pvpGame == null) {
                 pvpGame = new PlayerVsPlayer(board);
             }
+
+            if (board.promotingPawn != null) {
+                promotingPawn = board.promotingPawn;
+                isWhitePromotion = (promotingPawn.getColour() == PieceColour.WHITE);
+                previousMode = 4;
+                mode = 5;
+            } else {
+                if (Gdx.input.justTouched()) {
+                    float x = Gdx.input.getX();
+                    float y = Gdx.graphics.getHeight() - Gdx.input.getY();
+                    pvpGame.click(x, y);
+                }
+                pvpGame.draw(batch);
+            }
+        } else if (mode == 5) {
+            board.draw(batch);
+
+            float pawnX = promotingPawn.getX();
+            int pawnCol = (int)((pawnX - board.boardX - board.borderOffsetX) / board.squareSize);
+
+            float menuX, menuY;
+
+            if (pawnCol < 4) {
+                menuX = board.boardX + (481-70);
+            } else {
+                menuX = 20;
+            }
+
+            if (isWhitePromotion) {
+                menuY = 200;
+                whitePromotion.setX(menuX);
+                whitePromotion.setY(menuY);
+                whitePromotion.draw(batch);
+            } else {
+                menuY = 100;
+                blackPromotion.setX(menuX);
+                blackPromotion.setY(menuY);
+                blackPromotion.draw(batch);
+            }
+
             if (Gdx.input.justTouched()) {
                 float x = Gdx.input.getX();
                 float y = Gdx.graphics.getHeight() - Gdx.input.getY();
-                pvpGame.click(x, y);
+
+                float menuWidth;
+                float menuHeight;
+
+                if (isWhitePromotion) {
+                    menuWidth = whitePromotion.getWidth();
+                    menuHeight = whitePromotion.getHeight();
+                } else {
+                    menuWidth = blackPromotion.getWidth();
+                    menuHeight = blackPromotion.getHeight();
+                }
+
+                if (x >= menuX && x <= menuX + menuWidth &&
+                    y >= menuY && y <= menuY + menuHeight) {
+
+                    float relativeY = y - menuY;
+                    float sectionHeight = menuHeight / 4;
+                    int choice = (int)(relativeY / sectionHeight);
+
+                    if (choice == 0) {
+                        choice = 3;
+                    } else if (choice == 1) {
+                        choice = 2;
+                    } else if (choice == 2) {
+                        choice = 1;
+                    } else if (choice == 3) {
+                        choice = 0;
+                    }
+
+                    if (isWhitePromotion) {
+                        board.promotePawn(promotingPawn, choice,
+                            whiteQueenTex, whiteRookTex,
+                            whiteBishopTex, whiteKnightTex);
+                    } else {
+                        board.promotePawn(promotingPawn, choice,
+                            blackQueenTex, blackRookTex,
+                            blackBishopTex, blackKnightTex);
+                    }
+
+                    if (previousMode == 3) {
+                        mode = 3;
+                        if (pvcGame != null) {
+                            pvcGame.switchTurn();
+                        }
+                    } else if (previousMode == 4) {
+                        mode = 4;
+                        if (pvpGame != null) {
+                            pvpGame.isWhiteTurn();
+                        }
+                    }
+
+                    promotingPawn = null;
+                    board.promotingPawn = null;
+                }
             }
-            pvpGame.draw(batch);
         }
-
-        /* else if (mode == 5){
-            board.draw(batch);
-            whitePromotion.draw(batch);
-
-
-           if (Gdx.input.justTouched()) {
-                float x = Gdx.input.getX();
-                float y = Gdx.graphics.getHeight() - Gdx.input.getY();
-
-           if (x < white......)
-
-
-
-        } */
-
-
-
-
-
-
 
         batch.end();
     }
@@ -197,7 +282,3 @@ public class Main extends ApplicationAdapter {
 }
 // Finished working is control+k then write what I changed then commit and push
 // Starting work is control+t then merge then pull
-
-
-
-

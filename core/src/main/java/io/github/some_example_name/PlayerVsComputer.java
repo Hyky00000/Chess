@@ -21,7 +21,10 @@ public class PlayerVsComputer {
     public void click(float x, float y) {
         if (board.gameOver) return;
 
-        // Ignore the click if computer's turn
+        if (board.promotingPawn != null) {
+            return;
+        }
+
         if (playerIsWhite && !whiteTurn) {
             return;
         }
@@ -49,10 +52,12 @@ public class PlayerVsComputer {
             // move the selected piece
             boolean moveSuccessful = board.tryMove(selectedPiece, x, y, whiteTurn);
             if (moveSuccessful) {
-                whiteTurn = !whiteTurn;
-                // If its computers turn then it makes a move
-                if (!board.gameOver && ((playerIsWhite && !whiteTurn) || (!playerIsWhite && whiteTurn))) {
-                    makeAIMove();
+                if (board.promotingPawn == null) {
+                    whiteTurn = !whiteTurn;
+                    // If its computers turn then it makes a move
+                    if (!board.gameOver && ((playerIsWhite && !whiteTurn) || (!playerIsWhite && whiteTurn))) {
+                        makeAIMove();
+                    }
                 }
             }
             pieceSelected = false;
@@ -61,11 +66,15 @@ public class PlayerVsComputer {
 
     // AI makes a move based on difficulty level
     private void makeAIMove() {
+        if (board.promotingPawn != null) {
+            return;
+        }
+
         PieceColour aiColour;
         if (playerIsWhite) {
-            aiColour = PieceColour.BLACK;  // If player is white AI is black
+            aiColour = PieceColour.BLACK;
         } else {
-            aiColour = PieceColour.WHITE;  // If player is black AI is white
+            aiColour = PieceColour.WHITE;
         }
 
         java.util.ArrayList<Board.Move> legalMoves = board.getAllLegalMoves(aiColour);
@@ -90,7 +99,9 @@ public class PlayerVsComputer {
 
             // ACTUALLY making the move on the board
             board.makeMove(chosenMove);
-            whiteTurn = !whiteTurn;  // Switch turns after AI moves
+            if (board.promotingPawn == null) {
+                whiteTurn = !whiteTurn;  // Switch turns after AI moves
+            }
         }
     }
 
@@ -106,7 +117,7 @@ public class PlayerVsComputer {
         // Get all legal moves sorted from best to worst
         java.util.ArrayList<Board.Move> sortedMoves = board.getSortedLegalMoves(aiColour);
         if (sortedMoves.size() == 0) {
-            return null;  // No moves available
+            return null;
         }
 
         // Calculate how many moves to consider from the top
@@ -149,5 +160,8 @@ public class PlayerVsComputer {
 
     public void setAiDifficulty(int difficulty) {
         this.aiDifficulty = difficulty;
+    }
+    public void switchTurn() {
+        whiteTurn = !whiteTurn;
     }
 }
