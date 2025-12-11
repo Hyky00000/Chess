@@ -3,6 +3,8 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 
 public class Board {
+    public float width = 481;
+    public float height = 480;
     private Texture boardTexture;
     public Piece[] pieces;
     public float squareSize = 54.5f;
@@ -79,9 +81,7 @@ public class Board {
 
     public boolean tryMove(Piece piece, float targetX, float targetY, boolean whiteTurn) {
         if (gameOver) return false;
-
         if (promotingPawn != null) return false;
-
         this.whiteTurn = whiteTurn;
 
         if (whiteTurn == true) {

@@ -181,9 +181,9 @@ public class Main extends ApplicationAdapter {
             float menuX, menuY;
 
             if (pawnCol < 4) {
-                menuX = board.boardX + (481-70);
+                menuX = board.boardX + (board.width - board.borderOffsetX - 60);
             } else {
-                menuX = 20;
+                menuX = board.borderOffsetX;
             }
 
             if (isWhitePromotion) {
