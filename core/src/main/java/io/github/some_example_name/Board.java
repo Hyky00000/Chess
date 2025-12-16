@@ -467,12 +467,10 @@ public class Board {
 
             if (piece.getColour() == PieceColour.WHITE && row == 7) {
                 promotingPawn = piece;
-                //promotePawnToQueen(piece);
 
             }
             else if (piece.getColour() == PieceColour.BLACK && row == 0) {
                 promotingPawn = piece;
-                //promotePawnToQueen(piece);
             }
         }
     }
