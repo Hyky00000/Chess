@@ -593,6 +593,6 @@ public class Main extends ApplicationAdapter {
         blackKingTex.dispose();
         menuTexture.dispose();
     }
-}
+} //lol
 // Finished working is control+k then write what I changed then commit and push
 // Starting work is control+t then merge then pull
