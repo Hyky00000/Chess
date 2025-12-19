@@ -3,13 +3,13 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 
 public class Board {
-    public float width = 481;
+    public float width = 480;
     public float height = 480;
     private Texture boardTexture;
     public Piece[] pieces;
-    public float squareSize = 54.5f;
-    public float borderOffsetX = 22.5f;
-    public float borderOffsetY = 22f;
+    public float squareSize = 49.5f;
+    public float borderOffsetX = 40;
+    public float borderOffsetY = 39.5f;
     public float boardX = 0f;
     public float boardY = 0f;
     private Texture whiteQueenTex;
