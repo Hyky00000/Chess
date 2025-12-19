@@ -18,19 +18,15 @@ public class PlayerVsComputer {
         this.aiDifficulty = aiDifficulty;
     }
 
-    public void click(float x, float y) {
-        if (board.gameOver) return;
+    public boolean click(float x, float y) {
+        if (board.gameOver) return false;
 
         if (board.promotingPawn != null) {
-            return;
+            return false;
         }
 
-        if (playerIsWhite && !whiteTurn) {
-            return;
-        }
-        else if (!playerIsWhite && whiteTurn){
-            makeAIMove();
-            return;
+        if ((playerIsWhite && !whiteTurn) || (!playerIsWhite && whiteTurn)) {
+            return false;
         }
 
         if (!pieceSelected) {
@@ -41,31 +37,30 @@ public class PlayerVsComputer {
                     if (whiteTurn && piece.getColour() == PieceColour.WHITE) {
                         selectedPiece = piece;
                         pieceSelected = true;
+                        return false;
                     } else if (!whiteTurn && piece.getColour() == PieceColour.BLACK) {
                         selectedPiece = piece;
                         pieceSelected = true;
+                        return false;
                     }
                     break;
                 }
             }
         } else {
-            // move the selected piece
             boolean moveSuccessful = board.tryMove(selectedPiece, x, y, whiteTurn);
             if (moveSuccessful) {
                 if (board.promotingPawn == null) {
                     whiteTurn = !whiteTurn;
-                    // If its computers turn then it makes a move
-                    if (!board.gameOver && ((playerIsWhite && !whiteTurn) || (!playerIsWhite && whiteTurn))) {
-                        makeAIMove();
-                    }
                 }
             }
             pieceSelected = false;
+            return moveSuccessful;
         }
+        return false;
     }
 
     // AI makes a move based on difficulty level
-    private void makeAIMove() {
+    public void makeAIMove() {
         if (board.promotingPawn != null) {
             return;
         }
@@ -152,6 +147,7 @@ public class PlayerVsComputer {
 
     public void draw(SpriteBatch batch) {
         board.draw(batch);
+        board.drawCapturedPieces(batch);
     }
 
     public boolean isWhiteTurn() {

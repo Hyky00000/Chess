@@ -12,11 +12,10 @@ public class PlayerVsPlayer {
         this.board = board;
     }
 
-    public void click(float x, float y) {
-        if (board.gameOver) return;
+    public boolean click(float x, float y) {
+        if (board.gameOver) return false;
 
         if (!pieceSelected) {
-            // Select a piece
             for (Piece piece : board.getPieces()) {
                 if (piece.getX() < 1000 && x >= piece.getX() && x <= piece.getX() + piece.getWidth() &&
                     y >= piece.getY() && y <= piece.getY() + piece.getHeight()) {
@@ -24,9 +23,11 @@ public class PlayerVsPlayer {
                     if (whiteTurn && piece.getColour() == PieceColour.WHITE) {
                         selectedPiece = piece;
                         pieceSelected = true;
+                        return false;
                     } else if (!whiteTurn && piece.getColour() == PieceColour.BLACK) {
                         selectedPiece = piece;
                         pieceSelected = true;
+                        return false;
                     }
                     break;
                 }
@@ -37,11 +38,14 @@ public class PlayerVsPlayer {
                 whiteTurn = !whiteTurn;
             }
             pieceSelected = false;
+            return moveSuccessful;
         }
+        return false;
     }
 
     public void draw(SpriteBatch batch) {
         board.draw(batch);
+        board.drawCapturedPieces(batch);
     }
 
     public boolean isWhiteTurn() {
