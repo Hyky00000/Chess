@@ -186,8 +186,14 @@ public class Main extends ApplicationAdapter {
                 isWhitePromotion = (promotingPawn.getColour() == PieceColour.WHITE);
                 previousMode = 3;
                 mode = 5;
+                if (isWhitePromotion) {
+                    whiteClockRunning = true;
+                    blackClockRunning = false;
+                } else {
+                    whiteClockRunning = false;
+                    blackClockRunning = true;
+                }
             } else {
-                // NEW: Check if it's AI's turn and make AI move automatically
                 boolean shouldAIMove = (playerIsWhite && !pvcGame.isWhiteTurn()) || (!playerIsWhite && pvcGame.isWhiteTurn());
                 if (shouldAIMove) {
                     pvcGame.makeAIMove();
@@ -231,6 +237,13 @@ public class Main extends ApplicationAdapter {
                 isWhitePromotion = (promotingPawn.getColour() == PieceColour.WHITE);
                 previousMode = 4;
                 mode = 5;
+                if (isWhitePromotion) {
+                    whiteClockRunning = true;
+                    blackClockRunning = false;
+                } else {
+                    whiteClockRunning = false;
+                    blackClockRunning = true;
+                }
             } else {
                 if (Gdx.input.justTouched()) {
                     float x = Gdx.input.getX();
@@ -344,232 +357,251 @@ public class Main extends ApplicationAdapter {
         float deltaTime = Gdx.graphics.getDeltaTime();
 
         boolean gameOver = board.gameOver;
-        if (!gameOver) {
-            if (whiteClockRunning && whiteFTime > 0) {
-                whiteFTime = whiteFTime - deltaTime;
-                if (whiteFTime <= 0){
-                    whiteFTime = 0;
+
+
+
+        if (mode == 3 || mode == 4 || mode == 5) {
+            if (!gameOver) {
+                if (mode == 3 || mode == 4) {
+                    // Normal game mode - update both clocks based on who's turn it is
+
+                    if (whiteClockRunning && whiteFTime > 0) {
+                        whiteFTime = whiteFTime - deltaTime;
+                        if (whiteFTime <= 0) {
+                            whiteFTime = 0;
+                        }
+                    }
+
+                    if (blackClockRunning && blackFTime > 0) {
+                        blackFTime = blackFTime - deltaTime;
+                        if (blackFTime <= 0) {
+                            blackFTime = 0;
+                        }
+                    }
+                } else if (mode == 5) {
+                    // Promotion mode - only the promoting player's clock runs
+
+                    if (isWhitePromotion) {
+                        // White is choosing piece - only white clock runs
+                        if (whiteClockRunning && whiteFTime > 0) {
+                            whiteFTime = whiteFTime - deltaTime;
+                            if (whiteFTime <= 0) {
+                                whiteFTime = 0;
+                            }
+                        }
+                    } else {
+                        // Black is choosing piece - only black clock runs
+                        if (blackClockRunning && blackFTime > 0) {
+                            blackFTime = blackFTime - deltaTime;
+                            if (blackFTime <= 0) {
+                                blackFTime = 0;
+                            }
+                        }
+                    }
                 }
             }
 
-            if (blackClockRunning && blackFTime > 0) {
-                blackFTime = blackFTime - deltaTime;
-                if (blackFTime <= 0){
-                    blackFTime = 0;
+            if (blackFTime > 299) {
+                blackBNumber = 5;
+                String blackSRoundedS = "00";
+                font.draw(batch, "Black: " + Integer.toString(blackBNumber) + ":" + blackSRoundedS, 490, 280);
+                font.getData().setScale(2, 2);
+                font.setColor(Color.WHITE);
+            }
+            if (blackFTime <= 299 && blackFTime > 240) {
+                blackBNumber = 4;
+                blackSNumber = ((blackFTime / 60) - blackBNumber) * 60;
+                blackSRounded = (int) Math.ceil(blackSNumber);
+                if (blackSRounded >= 1 && blackSRounded <= 9) {
+                    String blackSRoundedS = "0" + Integer.toString(blackSRounded);
+                    font.draw(batch, "Black: " + Integer.toString(blackBNumber) + ":" + blackSRoundedS, 490, 280);
+                } else {
+                    font.draw(batch, "Black: " + Integer.toString(blackBNumber) + ":" + Integer.toString(blackSRounded), 490, 280);
                 }
+                font.getData().setScale(2, 2);
+                font.setColor(Color.WHITE);
             }
-        }
+            if (blackFTime > 239 && blackFTime <= 240) {
+                blackBNumber = 4;
+                String blackSRoundedS = "00";
+                font.draw(batch, "Black: " + Integer.toString(blackBNumber) + ":" + blackSRoundedS, 490, 280);
+                font.getData().setScale(2, 2);
+                font.setColor(Color.WHITE);
+            }
+            if (blackFTime <= 239 && blackFTime > 180) {
+                blackBNumber = 3;
+                blackSNumber = ((blackFTime / 60) - blackBNumber) * 60;
+                blackSRounded = (int) Math.ceil(blackSNumber);
+                if (blackSRounded >= 1 && blackSRounded <= 9) {
+                    String blackSRoundedS = "0" + Integer.toString(blackSRounded);
+                    font.draw(batch, "Black: " + Integer.toString(blackBNumber) + ":" + blackSRoundedS, 490, 280);
+                } else {
+                    font.draw(batch, "Black: " + Integer.toString(blackBNumber) + ":" + Integer.toString(blackSRounded), 490, 280);
+                }
+                font.getData().setScale(2, 2);
+                font.setColor(Color.WHITE);
+            }
+            if (blackFTime > 179 && blackFTime <= 180) {
+                blackBNumber = 3;
+                String blackSRoundedS = "00";
+                font.draw(batch, "Black: " + Integer.toString(blackBNumber) + ":" + blackSRoundedS, 490, 280);
+                font.getData().setScale(2, 2);
+                font.setColor(Color.WHITE);
+            }
+            if (blackFTime <= 179 && blackFTime > 120) {
+                blackBNumber = 2;
+                blackSNumber = ((blackFTime / 60) - blackBNumber) * 60;
+                blackSRounded = (int) Math.ceil(blackSNumber);
+                if (blackSRounded >= 1 && blackSRounded <= 9) {
+                    String blackSRoundedS = "0" + Integer.toString(blackSRounded);
+                    font.draw(batch, "Black: " + Integer.toString(blackBNumber) + ":" + blackSRoundedS, 490, 280);
+                } else {
+                    font.draw(batch, "Black: " + Integer.toString(blackBNumber) + ":" + Integer.toString(blackSRounded), 490, 280);
+                }
+                font.getData().setScale(2, 2);
+                font.setColor(Color.WHITE);
+            }
+            if (blackFTime > 119 && blackFTime <= 120) {
+                blackBNumber = 2;
+                String blackSRoundedS = "00";
+                font.draw(batch, "Black: " + Integer.toString(blackBNumber) + ":" + blackSRoundedS, 490, 280);
+                font.getData().setScale(2, 2);
+                font.setColor(Color.WHITE);
+            }
+            if (blackFTime <= 119 && blackFTime > 60) {
+                blackBNumber = 1;
+                blackSNumber = ((blackFTime / 60) - blackBNumber) * 60;
+                blackSRounded = (int) Math.ceil(blackSNumber);
+                if (blackSRounded >= 1 && blackSRounded <= 9) {
+                    String blackSRoundedS = "0" + Integer.toString(blackSRounded);
+                    font.draw(batch, "Black: " + Integer.toString(blackBNumber) + ":" + blackSRoundedS, 490, 280);
+                } else {
+                    font.draw(batch, "Black: " + Integer.toString(blackBNumber) + ":" + Integer.toString(blackSRounded), 490, 280);
+                }
+                font.getData().setScale(2, 2);
+                font.setColor(Color.WHITE);
+            }
+            if (blackFTime > 59 && blackFTime <= 60) {
+                blackBNumber = 1;
+                String blackSRoundedS = "00";
+                font.draw(batch, "Black: " + Integer.toString(blackBNumber) + ":" + blackSRoundedS, 490, 280);
+                font.getData().setScale(2, 2);
+                font.setColor(Color.WHITE);
+            }
+            if (blackFTime <= 59 && blackFTime > 0) {
+                blackBNumber = 0;
+                blackSNumber = ((blackFTime / 60) - blackBNumber) * 60;
+                blackSRounded = (int) Math.ceil(blackSNumber);
+                if (blackSRounded >= 1 && blackSRounded <= 9) {
+                    String blackSRoundedS = "0" + Integer.toString(blackSRounded);
+                    font.draw(batch, "Black: " + Integer.toString(blackBNumber) + ":" + blackSRoundedS, 490, 280);
+                } else {
+                    font.draw(batch, "Black: " + Integer.toString(blackBNumber) + ":" + Integer.toString(blackSRounded), 490, 280);
+                }
+                font.getData().setScale(2, 2);
+                font.setColor(Color.WHITE);
+            }
 
-        if (blackFTime > 299){
-            blackBNumber = 5;
-            String blackSRoundedS = "00";
-            font.draw(batch, "Black: " + Integer.toString(blackBNumber) + ":" + blackSRoundedS, 490, 280);
-            font.getData().setScale(2, 2);
-            font.setColor(Color.WHITE);
-        }
-        if (blackFTime <= 299 && blackFTime > 240){
-            blackBNumber = 4;
-            blackSNumber = ((blackFTime / 60) - blackBNumber) * 60;
-            blackSRounded = (int) Math.ceil(blackSNumber);
-            if (blackSRounded >= 1 && blackSRounded <= 9){
-                String blackSRoundedS = "0" + Integer.toString(blackSRounded);
-                font.draw(batch, "Black: " + Integer.toString(blackBNumber) + ":" + blackSRoundedS, 490, 280);
-            }
-            else{
-                font.draw(batch, "Black: " + Integer.toString(blackBNumber) + ":" + Integer.toString(blackSRounded), 490, 280);
-            }
-            font.getData().setScale(2, 2);
-            font.setColor(Color.WHITE);
-        }
-        if (blackFTime > 239 && blackFTime <= 240){
-            blackBNumber = 4;
-            String blackSRoundedS = "00";
-            font.draw(batch, "Black: " + Integer.toString(blackBNumber) + ":" + blackSRoundedS, 490, 280);
-            font.getData().setScale(2, 2);
-            font.setColor(Color.WHITE);
-        }
-        if (blackFTime <= 239 && blackFTime > 180){
-            blackBNumber = 3;
-            blackSNumber = ((blackFTime / 60) - blackBNumber) * 60;
-            blackSRounded = (int) Math.ceil(blackSNumber);
-            if (blackSRounded >= 1 && blackSRounded <= 9){
-                String blackSRoundedS = "0" + Integer.toString(blackSRounded);
-                font.draw(batch, "Black: " + Integer.toString(blackBNumber) + ":" + blackSRoundedS, 490, 280);
-            }
-            else{
-                font.draw(batch, "Black: " + Integer.toString(blackBNumber) + ":" + Integer.toString(blackSRounded), 490, 280);
-            }
-            font.getData().setScale(2, 2);
-            font.setColor(Color.WHITE);
-        }
-        if (blackFTime > 179 && blackFTime <= 180){
-            blackBNumber = 3;
-            String blackSRoundedS = "00";
-            font.draw(batch, "Black: " + Integer.toString(blackBNumber) + ":" + blackSRoundedS, 490, 280);
-            font.getData().setScale(2, 2);
-            font.setColor(Color.WHITE);
-        }
-        if (blackFTime <= 179 && blackFTime > 120){
-            blackBNumber = 2;
-            blackSNumber = ((blackFTime / 60) - blackBNumber) * 60;
-            blackSRounded = (int) Math.ceil(blackSNumber);
-            if (blackSRounded >= 1 && blackSRounded <= 9){
-                String blackSRoundedS = "0" + Integer.toString(blackSRounded);
-                font.draw(batch, "Black: " + Integer.toString(blackBNumber) + ":" + blackSRoundedS, 490, 280);
-            }
-            else{
-                font.draw(batch, "Black: " + Integer.toString(blackBNumber) + ":" + Integer.toString(blackSRounded), 490, 280);
-            }
-            font.getData().setScale(2, 2);
-            font.setColor(Color.WHITE);
-        }
-        if (blackFTime > 119 && blackFTime <= 120){
-            blackBNumber = 2;
-            String blackSRoundedS = "00";
-            font.draw(batch, "Black: " + Integer.toString(blackBNumber) + ":" + blackSRoundedS, 490, 280);
-            font.getData().setScale(2, 2);
-            font.setColor(Color.WHITE);
-        }
-        if (blackFTime <= 119 && blackFTime > 60){
-            blackBNumber = 1;
-            blackSNumber = ((blackFTime / 60) - blackBNumber) * 60;
-            blackSRounded = (int) Math.ceil(blackSNumber);
-            if (blackSRounded >= 1 && blackSRounded <= 9){
-                String blackSRoundedS = "0" + Integer.toString(blackSRounded);
-                font.draw(batch, "Black: " + Integer.toString(blackBNumber) + ":" + blackSRoundedS, 490, 280);
-            }
-            else{
-                font.draw(batch, "Black: " + Integer.toString(blackBNumber) + ":" + Integer.toString(blackSRounded), 490, 280);
-            }
-            font.getData().setScale(2, 2);
-            font.setColor(Color.WHITE);
-        }
-        if (blackFTime > 59 && blackFTime <= 60){
-            blackBNumber = 1;
-            String blackSRoundedS = "00";
-            font.draw(batch, "Black: " + Integer.toString(blackBNumber) + ":" + blackSRoundedS, 490, 280);
-            font.getData().setScale(2, 2);
-            font.setColor(Color.WHITE);
-        }
-        if (blackFTime <= 59 && blackFTime > 0){
-            blackBNumber = 0;
-            blackSNumber = ((blackFTime / 60) - blackBNumber) * 60;
-            blackSRounded = (int) Math.ceil(blackSNumber);
-            if (blackSRounded >= 1 && blackSRounded <= 9){
-                String blackSRoundedS = "0" + Integer.toString(blackSRounded);
-                font.draw(batch, "Black: " + Integer.toString(blackBNumber) + ":" + blackSRoundedS, 490, 280);
-            }
-            else{
-                font.draw(batch, "Black: " + Integer.toString(blackBNumber) + ":" + Integer.toString(blackSRounded), 490, 280);
-            }
-            font.getData().setScale(2, 2);
-            font.setColor(Color.WHITE);
-        }
-
-        if (whiteFTime > 299){
-            whiteBNumber = 5;
-            String whiteSRoundedS = "00";
-            font.draw(batch, "White: " + Integer.toString(whiteBNumber) + ":" + whiteSRoundedS, 485, 225);
-            font.getData().setScale(2, 2);
-            font.setColor(Color.WHITE);
-        }
-        if (whiteFTime <= 299 && whiteFTime > 240){
-            whiteBNumber = 4;
-            whiteSNumber = ((whiteFTime / 60) - whiteBNumber) * 60;
-            whiteSRounded = (int) Math.ceil(whiteSNumber);
-            if (whiteSRounded >= 1 && whiteSRounded <= 9){
-                String whiteSRoundedS = "0" + Integer.toString(whiteSRounded);
+            if (whiteFTime > 299) {
+                whiteBNumber = 5;
+                String whiteSRoundedS = "00";
                 font.draw(batch, "White: " + Integer.toString(whiteBNumber) + ":" + whiteSRoundedS, 485, 225);
+                font.getData().setScale(2, 2);
+                font.setColor(Color.WHITE);
             }
-            else{
-                font.draw(batch, "White: " + Integer.toString(whiteBNumber) + ":" + Integer.toString(whiteSRounded), 485, 225);
+            if (whiteFTime <= 299 && whiteFTime > 240) {
+                whiteBNumber = 4;
+                whiteSNumber = ((whiteFTime / 60) - whiteBNumber) * 60;
+                whiteSRounded = (int) Math.ceil(whiteSNumber);
+                if (whiteSRounded >= 1 && whiteSRounded <= 9) {
+                    String whiteSRoundedS = "0" + Integer.toString(whiteSRounded);
+                    font.draw(batch, "White: " + Integer.toString(whiteBNumber) + ":" + whiteSRoundedS, 485, 225);
+                } else {
+                    font.draw(batch, "White: " + Integer.toString(whiteBNumber) + ":" + Integer.toString(whiteSRounded), 485, 225);
+                }
+                font.getData().setScale(2, 2);
+                font.setColor(Color.WHITE);
             }
-            font.getData().setScale(2, 2);
-            font.setColor(Color.WHITE);
-        }
-        if (whiteFTime > 239 && whiteFTime <= 240){
-            whiteBNumber = 4;
-            String whiteSRoundedS = "00";
-            font.draw(batch, "White: " + Integer.toString(whiteBNumber) + ":" + whiteSRoundedS, 485, 225);
-            font.getData().setScale(2, 2);
-            font.setColor(Color.WHITE);
-        }
-        if (whiteFTime <= 239 && whiteFTime > 180){
-            whiteBNumber = 3;
-            whiteSNumber = ((whiteFTime / 60) - whiteBNumber) * 60;
-            whiteSRounded = (int) Math.ceil(whiteSNumber);
-            if (whiteSRounded >= 1 && whiteSRounded <= 9){
-                String whiteSRoundedS = "0" + Integer.toString(whiteSRounded);
+            if (whiteFTime > 239 && whiteFTime <= 240) {
+                whiteBNumber = 4;
+                String whiteSRoundedS = "00";
+                font.draw(batch, "White: " + Integer.toString(whiteBNumber) + ":" + whiteSRoundedS, 485, 225);
+                font.getData().setScale(2, 2);
+                font.setColor(Color.WHITE);
+            }
+            if (whiteFTime <= 239 && whiteFTime > 180) {
+                whiteBNumber = 3;
+                whiteSNumber = ((whiteFTime / 60) - whiteBNumber) * 60;
+                whiteSRounded = (int) Math.ceil(whiteSNumber);
+                if (whiteSRounded >= 1 && whiteSRounded <= 9) {
+                    String whiteSRoundedS = "0" + Integer.toString(whiteSRounded);
+                    font.draw(batch, "White: " + Integer.toString(whiteBNumber) + ":" + whiteSRoundedS, 490, 225);
+                } else {
+                    font.draw(batch, "White: " + Integer.toString(whiteBNumber) + ":" + Integer.toString(whiteSRounded), 490, 225);
+                }
+                font.getData().setScale(2, 2);
+                font.setColor(Color.WHITE);
+            }
+            if (whiteFTime > 179 && whiteFTime <= 180) {
+                whiteBNumber = 3;
+                String whiteSRoundedS = "00";
                 font.draw(batch, "White: " + Integer.toString(whiteBNumber) + ":" + whiteSRoundedS, 490, 225);
+                font.getData().setScale(2, 2);
+                font.setColor(Color.WHITE);
             }
-            else{
-                font.draw(batch, "White: " + Integer.toString(whiteBNumber) + ":" + Integer.toString(whiteSRounded), 490, 225);
+            if (whiteFTime <= 179 && whiteFTime > 120) {
+                whiteBNumber = 2;
+                whiteSNumber = ((whiteFTime / 60) - whiteBNumber) * 60;
+                whiteSRounded = (int) Math.ceil(whiteSNumber);
+                if (whiteSRounded >= 1 && whiteSRounded <= 9) {
+                    String whiteSRoundedS = "0" + Integer.toString(whiteSRounded);
+                    font.draw(batch, "White: " + Integer.toString(whiteBNumber) + ":" + whiteSRoundedS, 490, 225);
+                } else {
+                    font.draw(batch, "White: " + Integer.toString(whiteBNumber) + ":" + Integer.toString(whiteSRounded), 490, 225);
+                }
+                font.getData().setScale(2, 2);
+                font.setColor(Color.WHITE);
             }
-            font.getData().setScale(2, 2);
-            font.setColor(Color.WHITE);
-        }
-        if (whiteFTime > 179 && whiteFTime <= 180){
-            whiteBNumber = 3;
-            String whiteSRoundedS = "00";
-            font.draw(batch, "White: " + Integer.toString(whiteBNumber) + ":" + whiteSRoundedS, 490, 225);
-            font.getData().setScale(2, 2);
-            font.setColor(Color.WHITE);
-        }
-        if (whiteFTime <= 179 && whiteFTime > 120){
-            whiteBNumber = 2;
-            whiteSNumber = ((whiteFTime / 60) - whiteBNumber) * 60;
-            whiteSRounded = (int) Math.ceil(whiteSNumber);
-            if (whiteSRounded >= 1 && whiteSRounded <= 9){
-                String whiteSRoundedS = "0" + Integer.toString(whiteSRounded);
+            if (whiteFTime > 119 && whiteFTime <= 120) {
+                whiteBNumber = 2;
+                String whiteSRoundedS = "00";
                 font.draw(batch, "White: " + Integer.toString(whiteBNumber) + ":" + whiteSRoundedS, 490, 225);
+                font.getData().setScale(2, 2);
+                font.setColor(Color.WHITE);
             }
-            else{
-                font.draw(batch, "White: " + Integer.toString(whiteBNumber) + ":" + Integer.toString(whiteSRounded), 490, 225);
+            if (whiteFTime <= 119 && whiteFTime > 60) {
+                whiteBNumber = 1;
+                whiteSNumber = ((whiteFTime / 60) - whiteBNumber) * 60;
+                whiteSRounded = (int) Math.ceil(whiteSNumber);
+                if (whiteSRounded >= 1 && whiteSRounded <= 9) {
+                    String whiteSRoundedS = "0" + Integer.toString(whiteSRounded);
+                    font.draw(batch, "White: " + Integer.toString(whiteBNumber) + ":" + whiteSRoundedS, 490, 225);
+                } else {
+                    font.draw(batch, "White: " + Integer.toString(whiteBNumber) + ":" + Integer.toString(whiteSRounded), 490, 225);
+                }
+                font.getData().setScale(2, 2);
+                font.setColor(Color.WHITE);
             }
-            font.getData().setScale(2, 2);
-            font.setColor(Color.WHITE);
-        }
-        if (whiteFTime > 119 && whiteFTime <= 120){
-            whiteBNumber = 2;
-            String whiteSRoundedS = "00";
-            font.draw(batch, "White: " + Integer.toString(whiteBNumber) + ":" + whiteSRoundedS, 490, 225);
-            font.getData().setScale(2, 2);
-            font.setColor(Color.WHITE);
-        }
-        if (whiteFTime <= 119 && whiteFTime > 60){
-            whiteBNumber = 1;
-            whiteSNumber = ((whiteFTime / 60) - whiteBNumber) * 60;
-            whiteSRounded = (int) Math.ceil(whiteSNumber);
-            if (whiteSRounded >= 1 && whiteSRounded <= 9){
-                String whiteSRoundedS = "0" + Integer.toString(whiteSRounded);
+            if (whiteFTime > 59 && whiteFTime <= 60) {
+                whiteBNumber = 1;
+                String whiteSRoundedS = "00";
                 font.draw(batch, "White: " + Integer.toString(whiteBNumber) + ":" + whiteSRoundedS, 490, 225);
+                font.getData().setScale(2, 2);
+                font.setColor(Color.WHITE);
             }
-            else{
-                font.draw(batch, "White: " + Integer.toString(whiteBNumber) + ":" + Integer.toString(whiteSRounded), 490, 225);
+            if (whiteFTime <= 59 && whiteFTime > 0) {
+                whiteBNumber = 0;
+                whiteSNumber = ((whiteFTime / 60) - whiteBNumber) * 60;
+                whiteSRounded = (int) Math.ceil(whiteSNumber);
+                if (whiteSRounded >= 1 && whiteSRounded <= 9) {
+                    String whiteSRoundedS = "0" + Integer.toString(whiteSRounded);
+                    font.draw(batch, "White: " + Integer.toString(whiteBNumber) + ":" + whiteSRoundedS, 490, 225);
+                } else {
+                    font.draw(batch, "White: " + Integer.toString(whiteBNumber) + ":" + Integer.toString(whiteSRounded), 490, 225);
+                }
+                font.getData().setScale(2, 2);
+                font.setColor(Color.WHITE);
             }
-            font.getData().setScale(2, 2);
-            font.setColor(Color.WHITE);
-        }
-        if (whiteFTime > 59 && whiteFTime <= 60){
-            whiteBNumber = 1;
-            String whiteSRoundedS = "00";
-            font.draw(batch, "White: " + Integer.toString(whiteBNumber) + ":" + whiteSRoundedS, 490, 225);
-            font.getData().setScale(2, 2);
-            font.setColor(Color.WHITE);
-        }
-        if (whiteFTime <= 59 && whiteFTime > 0){
-            whiteBNumber = 0;
-            whiteSNumber = ((whiteFTime / 60) - whiteBNumber) * 60;
-            whiteSRounded = (int) Math.ceil(whiteSNumber);
-            if (whiteSRounded >= 1 && whiteSRounded <= 9){
-                String whiteSRoundedS = "0" + Integer.toString(whiteSRounded);
-                font.draw(batch, "White: " + Integer.toString(whiteBNumber) + ":" + whiteSRoundedS, 490, 225);
-            }
-            else{
-                font.draw(batch, "White: " + Integer.toString(whiteBNumber) + ":" + Integer.toString(whiteSRounded), 490, 225);
-            }
-            font.getData().setScale(2, 2);
-            font.setColor(Color.WHITE);
         }
 
         batch.end();
@@ -593,6 +625,6 @@ public class Main extends ApplicationAdapter {
         blackKingTex.dispose();
         menuTexture.dispose();
     }
-} //lol
+}
 // Finished working is control+k then write what I changed then commit and push
 // Starting work is control+t then merge then pull
