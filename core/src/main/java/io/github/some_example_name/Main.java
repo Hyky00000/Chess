@@ -69,7 +69,6 @@ public class Main extends ApplicationAdapter {
     // NEW: Variables for network game status
     private boolean networkWaitingForConnection = false;
     private float networkWaitTimer = 0;
-    private String networkStatusText = "";
 
     @Override
     public void create() {
@@ -137,7 +136,6 @@ public class Main extends ApplicationAdapter {
                     (y > menu.getY() + ((1 * menuChoiceHeight) + (1 * menuGapHeight)))) {
                     mode = 6; // Go to network menu
                     networkMenu.reset(); // Reset network menu to fresh state
-                    networkStatusText = ""; // Clear any status messages
                 }
             }
         } else if (mode == 1) {
@@ -386,28 +384,6 @@ public class Main extends ApplicationAdapter {
             board.drawCapturedPieces(batch);
             networkMenu.draw(batch);
 
-            // Draw some instructions for the user
-            font.getData().setScale(1f, 1f);
-            font.setColor(Color.WHITE);
-            font.draw(batch, "Online Multiplayer", 50, 450);
-
-            // Show what the user has selected
-            if (networkMenu.wantsToHost()) {
-                font.draw(batch, "Selected: HOST GAME", 50, 430);
-                font.draw(batch, "Click again to start hosting", 50, 410);
-                font.draw(batch, "Tell opponent your IP address", 50, 390);
-            } else if (networkMenu.wantsToJoin()) {
-                font.draw(batch, "Selected: JOIN GAME", 50, 430);
-                font.draw(batch, "Click 'Enter IP' section to type IP", 50, 410);
-                font.draw(batch, "Type IP address: " + networkMenu.getTypedText(), 50, 390);
-            }
-
-            // Show network status if we have any
-            if (!networkStatusText.isEmpty()) {
-                font.setColor(Color.YELLOW);
-                font.draw(batch, networkStatusText, 50, 370);
-            }
-
             // Handle clicks on the network menu
             if (Gdx.input.justTouched()) {
                 float x = Gdx.input.getX();
@@ -422,11 +398,23 @@ public class Main extends ApplicationAdapter {
 
                     // Check if we should start a network game
                     if (networkMenu.wantsToHost() && networkMenu.isReady()) {
-                        // Start as HOST
-                        startNetworkGameAsHost();
+                        // Start as HOST - run in background thread to avoid freezing
+                        new Thread(new Runnable() {
+                            @Override
+                            public void run() {
+                                startNetworkGameAsHost();
+                            }
+                        }).start();
+                        mode = 7; // Switch to network game mode immediately
                     } else if (networkMenu.wantsToJoin() && networkMenu.isReady()) {
-                        // Start as CLIENT (join existing game)
-                        startNetworkGameAsClient();
+                        // Start as CLIENT (join existing game) - run in background thread
+                        new Thread(new Runnable() {
+                            @Override
+                            public void run() {
+                                startNetworkGameAsClient();
+                            }
+                        }).start();
+                        mode = 7; // Switch to network game mode immediately
                     }
 
                 } else {
@@ -449,9 +437,17 @@ public class Main extends ApplicationAdapter {
         else if (mode == 7) {
             // Check if we have a network game object
             if (networkGame == null) {
-                // Something went wrong, go back to network menu
-                mode = 6;
-                networkStatusText = "Error: Game not created properly";
+                // Still connecting, just draw the board
+                board.draw(batch);
+                board.drawCapturedPieces(batch);
+
+                // Show simple waiting message in IntelliJ console
+                if (networkWaitingForConnection) {
+                    networkWaitTimer += Gdx.graphics.getDeltaTime();
+                    if ((int)networkWaitTimer % 5 == 0 && (int)networkWaitTimer > 0) {
+                        System.out.println("Waiting for opponent... " + (int)networkWaitTimer + " seconds");
+                    }
+                }
             } else {
                 // Update the network game to check for incoming messages
                 networkGame.update();
@@ -490,9 +486,6 @@ public class Main extends ApplicationAdapter {
 
                     // Draw the game board and pieces
                     networkGame.draw(batch);
-
-                    // Draw network connection status
-                    drawNetworkGameStatus();
                 }
             }
         }
@@ -763,13 +756,9 @@ public class Main extends ApplicationAdapter {
         // Create the network game as HOST
         networkGame = new PlayerVsNetwork(board, true, playerName);
 
-        // Set status message
-        networkStatusText = "Waiting for opponent to connect...";
+        // Set waiting flag
         networkWaitingForConnection = true;
         networkWaitTimer = 0;
-
-        // Switch to network game mode
-        mode = 7;
 
         // Reset clocks for new game
         whiteClockRunning = false;
@@ -778,6 +767,7 @@ public class Main extends ApplicationAdapter {
         blackFTime = 300;
 
         System.out.println("Started network game as HOST: " + playerName);
+        System.out.println("Waiting for opponent to connect...");
     }
 
     // NEW: Helper method to start a network game as CLIENT (join existing game)
@@ -800,11 +790,7 @@ public class Main extends ApplicationAdapter {
         boolean connectedSuccessfully = networkGame.connectToServer(ipAddress, 12345);
 
         if (connectedSuccessfully) {
-            networkStatusText = "Connected! Waiting for host to start...";
             networkWaitingForConnection = false;
-
-            // Switch to network game mode
-            mode = 7;
 
             // Reset clocks for new game
             whiteClockRunning = false;
@@ -815,77 +801,12 @@ public class Main extends ApplicationAdapter {
             System.out.println("Connected to network game as CLIENT: " + playerName);
             System.out.println("Connected to server at: " + ipAddress);
         } else {
-            networkStatusText = "Failed to connect. Check IP address and try again.";
             System.out.println("Failed to connect to server at: " + ipAddress);
-        }
-    }
+            System.out.println("Check IP address and try again.");
 
-    // NEW: Helper method to draw network game status information
-    private void drawNetworkGameStatus() {
-        // Update network wait timer if we're waiting
-        if (networkWaitingForConnection) {
-            networkWaitTimer += Gdx.graphics.getDeltaTime();
-        }
-
-        // Draw network connection status
-        font.getData().setScale(1f, 1f);
-
-        if (networkGame != null) {
-            if (networkGame.isConnected()) {
-                // Connected - show game info
-                font.setColor(Color.GREEN);
-                font.draw(batch, "CONNECTED", 500, 450);
-                font.draw(batch, "You: " + networkGame.getPlayerName(), 500, 430);
-                font.draw(batch, "Opponent: " + networkGame.getOpponentName(), 500, 410);
-
-                // Show whose turn it is
-                font.getData().setScale(1.2f, 1.2f);
-                if (networkGame.isWhiteTurn()) {
-                    font.setColor(Color.WHITE);
-                    font.draw(batch, "WHITE'S TURN", 500, 380);
-                } else {
-                    font.setColor(Color.BLACK);
-                    font.draw(batch, "BLACK'S TURN", 500, 380);
-                }
-
-                // Show which color the player is
-                font.getData().setScale(1f, 1f);
-                font.setColor(Color.LIGHT_GRAY);
-                if (networkGame.isWhite()) {
-                    font.draw(batch, "You are: WHITE", 500, 360);
-                } else {
-                    font.draw(batch, "You are: BLACK", 500, 360);
-                }
-
-                // Show any status messages from the network game
-                String gameStatus = networkGame.getStatusMessage();
-                if (gameStatus != null && !gameStatus.isEmpty()) {
-                    font.setColor(Color.YELLOW);
-                    font.draw(batch, gameStatus, 500, 340);
-                }
-
-            } else {
-                // Not connected yet - show waiting message
-                font.setColor(Color.YELLOW);
-                font.draw(batch, "WAITING FOR CONNECTION...", 500, 450);
-
-                // Show how long we've been waiting
-                int waitSeconds = (int)networkWaitTimer;
-                font.draw(batch, "Waiting: " + waitSeconds + " seconds", 500, 430);
-
-                // If waiting too long, show timeout warning
-                if (networkWaitTimer > 30) {
-                    font.setColor(Color.RED);
-                    font.draw(batch, "Taking too long. Check connection.", 500, 410);
-                }
-
-                // Show who is hosting
-                if (networkGame != null && networkGame.isHost()) {
-                    font.setColor(Color.CYAN);
-                    font.draw(batch, "You are HOSTING", 500, 390);
-                    font.draw(batch, "Tell opponent your IP address", 500, 370);
-                }
-            }
+            // Go back to network menu if connection fails
+            mode = 6;
+            networkGame = null;
         }
     }
 
@@ -917,3 +838,5 @@ public class Main extends ApplicationAdapter {
 }
 // Finished working is control+k then write what I changed then commit and push
 // Starting work is control+t then merge then pull
+// PC IPv4: 192.168.137.1
+// laptop IPv4: 192.168.0.68
