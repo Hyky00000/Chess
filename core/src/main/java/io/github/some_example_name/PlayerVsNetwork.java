@@ -33,8 +33,16 @@ public class PlayerVsNetwork {
         if (isHost) {
             isWhite = true;
             gameServer = new Server();
-            gameServer.startServer();
-            statusMessage = "Waiting for opponent to connect...";
+
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    gameServer.startServer();
+                    statusMessage = "Waiting for opponent to connect";
+                }
+            }).start();
+
+            statusMessage = "Starting server";
         } else {
             isWhite = false;
             gameClient = new Client();
@@ -149,16 +157,21 @@ public class PlayerVsNetwork {
             statusMessageTime -= deltaTime;
         }
 
-        NetworkMessage receivedMessage = null;
-
-        if (isHost && gameServer != null && gameServer.areWeConnected()) {
-            receivedMessage = gameServer.getLastChessMove();
+        if (isHost && gameServer != null) {
+            if (gameServer.isServerOn() && !gameServer.areWeConnected()) {
+                statusMessage = "Waiting for opponent";
+            } else if (gameServer.areWeConnected()) {
+                // Process messages
+                NetworkMessage receivedMessage = gameServer.getLastChessMove();
+                if (receivedMessage != null) {
+                    handleNetworkMessage(receivedMessage);
+                }
+            }
         } else if (!isHost && gameClient != null && gameClient.areWeConnected()) {
-            receivedMessage = gameClient.getLastChessMove();
-        }
-
-        if (receivedMessage != null) {
-            handleNetworkMessage(receivedMessage);
+            NetworkMessage receivedMessage = gameClient.getLastChessMove();
+            if (receivedMessage != null) {
+                handleNetworkMessage(receivedMessage);
+            }
         }
     }
 
