@@ -19,6 +19,10 @@ public class Main extends ApplicationAdapter {
     private WhitePromotion whitePromotion;
     private BlackPromotion blackPromotion;
     private Difficulty difficulty;
+    // NEW: Network multiplayer variables
+    private NetworkMenu networkMenu;
+    private Texture networkMenuTexture;
+    private PlayerVsNetwork networkGame;
     private int mode = 0;
     float menuChoiceHeight = 55.65861f;
     float menuGapHeight = 14.78852f;
@@ -62,6 +66,11 @@ public class Main extends ApplicationAdapter {
 
     private boolean lastWhiteTurn = true;
 
+    // NEW: Variables for network game status
+    private boolean networkWaitingForConnection = false;
+    private float networkWaitTimer = 0;
+    private String networkStatusText = "";
+
     @Override
     public void create() {
         batch = new SpriteBatch();
@@ -73,6 +82,7 @@ public class Main extends ApplicationAdapter {
         colourChoiceTexture = new Texture("ColourChoice.png");
         boardTexture = new Texture("ChessBoard.png");
         menuTexture = new Texture("Menu.png");
+        networkMenuTexture = new Texture("NetworkMenu.png");
 
         whitePawnTex = new Texture("WhitePawn.png");
         blackPawnTex = new Texture("BlackPawn.png");
@@ -93,6 +103,7 @@ public class Main extends ApplicationAdapter {
         difficulty = new Difficulty(difficultyTexture);
         whitePromotion = new WhitePromotion(whitePromotionTexture);
         blackPromotion = new BlackPromotion(blackPromotionTexture);
+        networkMenu = new NetworkMenu(networkMenuTexture);
     }
 
     @Override
@@ -100,7 +111,7 @@ public class Main extends ApplicationAdapter {
         ScreenUtils.clear(0.15f, 0.15f, 0.2f, 1);
         batch.begin();
 
-        // 0 is start, 1 is choose colour, 2 is difficulty, 3 is vs ai, 4 is pvp, 5 is pawn promotion
+        // 0 is start, 1 is choose colour, 2 is difficulty, 3 is vs ai, 4 is pvp, 5 is pawn promotion, 6 is network menu, 7 is network game
 
         if (mode == 0) {
             board.draw(batch);
@@ -119,6 +130,14 @@ public class Main extends ApplicationAdapter {
                     (y < menu.getY() + ((3 * menuChoiceHeight) + (2 * menuGapHeight))) &&
                     (y > menu.getY() + ((2 * menuChoiceHeight) + (2 * menuGapHeight)))) {
                     mode = 1;
+                }
+                // NEW: Check if the third menu option (Network Play) is clicked
+                else if ((x > menu.getX()) && (x < menu.getX() + menu.getWidth()) &&
+                    (y < menu.getY() + ((2 * menuChoiceHeight) + (1 * menuGapHeight))) &&
+                    (y > menu.getY() + ((1 * menuChoiceHeight) + (1 * menuGapHeight)))) {
+                    mode = 6; // Go to network menu
+                    networkMenu.reset(); // Reset network menu to fresh state
+                    networkStatusText = ""; // Clear any status messages
                 }
             }
         } else if (mode == 1) {
@@ -347,9 +366,133 @@ public class Main extends ApplicationAdapter {
                             }
                             lastWhiteTurn = currentWhiteTurn;
                         }
+                    } else if (previousMode == 7) {
+                        // NEW: If we came from network game, return to network game
+                        mode = 7;
+                        // Network game turn switching is handled by the network game itself
+                        // Send promotion choice to opponent if needed
+                        if (networkGame != null) {
+                            networkGame.sendPromotionChoice(choice);
+                        }
                     }
                     promotingPawn = null;
                     board.promotingPawn = null;
+                }
+            }
+        }
+        // NEW: Mode 6 - Network Menu (Choose Host or Join)
+        else if (mode == 6) {
+            board.draw(batch);
+            board.drawCapturedPieces(batch);
+            networkMenu.draw(batch);
+
+            // Draw some instructions for the user
+            font.getData().setScale(1f, 1f);
+            font.setColor(Color.WHITE);
+            font.draw(batch, "Online Multiplayer", 50, 450);
+
+            // Show what the user has selected
+            if (networkMenu.wantsToHost()) {
+                font.draw(batch, "Selected: HOST GAME", 50, 430);
+                font.draw(batch, "Click again to start hosting", 50, 410);
+                font.draw(batch, "Tell opponent your IP address", 50, 390);
+            } else if (networkMenu.wantsToJoin()) {
+                font.draw(batch, "Selected: JOIN GAME", 50, 430);
+                font.draw(batch, "Click 'Enter IP' section to type IP", 50, 410);
+                font.draw(batch, "Type IP address: " + networkMenu.getTypedText(), 50, 390);
+            }
+
+            // Show network status if we have any
+            if (!networkStatusText.isEmpty()) {
+                font.setColor(Color.YELLOW);
+                font.draw(batch, networkStatusText, 50, 370);
+            }
+
+            // Handle clicks on the network menu
+            if (Gdx.input.justTouched()) {
+                float x = Gdx.input.getX();
+                float y = Gdx.graphics.getHeight() - Gdx.input.getY();
+
+                // Check if click is on the network menu
+                if (x >= networkMenu.getX() && x <= networkMenu.getX() + networkMenu.getWidth() &&
+                    y >= networkMenu.getY() && y <= networkMenu.getY() + networkMenu.getHeight()) {
+
+                    // Let the network menu handle the click
+                    networkMenu.handleClick(x, y);
+
+                    // Check if we should start a network game
+                    if (networkMenu.wantsToHost() && networkMenu.isReady()) {
+                        // Start as HOST
+                        startNetworkGameAsHost();
+                    } else if (networkMenu.wantsToJoin() && networkMenu.isReady()) {
+                        // Start as CLIENT (join existing game)
+                        startNetworkGameAsClient();
+                    }
+
+                } else {
+                    // Clicked outside the menu - stop typing if we were typing
+                    networkMenu.stopTyping();
+                }
+            }
+
+            // Handle keyboard input for typing (very simple version)
+            // In a real game, you might want to use Gdx.input.getTextInput() for better typing
+            if (networkMenu.isTyping()) {
+                // Simple keyboard handling - this is very basic
+                // You might want to improve this for better user experience
+                if (Gdx.input.isKeyJustPressed(com.badlogic.gdx.Input.Keys.BACKSPACE)) {
+                    networkMenu.removeLastCharacter();
+                }
+            }
+        }
+        // NEW: Mode 7 - Network Game (Actual online gameplay)
+        else if (mode == 7) {
+            // Check if we have a network game object
+            if (networkGame == null) {
+                // Something went wrong, go back to network menu
+                mode = 6;
+                networkStatusText = "Error: Game not created properly";
+            } else {
+                // Update the network game to check for incoming messages
+                networkGame.update();
+
+                // Check for pawn promotion (just like other game modes)
+                if (board.promotingPawn != null) {
+                    promotingPawn = board.promotingPawn;
+                    isWhitePromotion = (promotingPawn.getColour() == PieceColour.WHITE);
+                    previousMode = 7; // Remember we came from network mode
+                    mode = 5; // Use the same promotion menu
+                    if (isWhitePromotion) {
+                        whiteClockRunning = true;
+                        blackClockRunning = false;
+                    } else {
+                        whiteClockRunning = false;
+                        blackClockRunning = true;
+                    }
+                } else {
+                    // Normal network gameplay
+                    if (Gdx.input.justTouched()) {
+                        float x = Gdx.input.getX();
+                        float y = Gdx.graphics.getHeight() - Gdx.input.getY();
+                        boolean moveMade = networkGame.click(x, y);
+                        boolean currentWhiteTurn = networkGame.isWhiteTurn();
+                        if (moveMade && currentWhiteTurn != lastWhiteTurn) {
+                            if (currentWhiteTurn) {
+                                blackClockRunning = false;
+                                whiteClockRunning = true;
+                            } else {
+                                whiteClockRunning = false;
+                                blackClockRunning = true;
+                            }
+                            lastWhiteTurn = currentWhiteTurn;
+                        }
+                    }
+
+                    // Draw the game board and pieces
+                    networkGame.draw(batch);
+
+                    // Draw network connection status
+                    drawNetworkGameStatus();
                 }
             }
         }
@@ -360,9 +503,9 @@ public class Main extends ApplicationAdapter {
 
 
 
-        if (mode == 3 || mode == 4 || mode == 5) {
+        if (mode == 3 || mode == 4 || mode == 5 || mode == 7) {
             if (!gameOver) {
-                if (mode == 3 || mode == 4) {
+                if (mode == 3 || mode == 4 || mode == 7) {
                     // Normal game mode - update both clocks based on who's turn it is
 
                     if (whiteClockRunning && whiteFTime > 0) {
@@ -401,6 +544,7 @@ public class Main extends ApplicationAdapter {
                 }
             }
 
+            // Draw the black player's clock time
             if (blackFTime > 299) {
                 blackBNumber = 5;
                 String blackSRoundedS = "00";
@@ -502,6 +646,7 @@ public class Main extends ApplicationAdapter {
                 font.setColor(Color.WHITE);
             }
 
+            // Draw the white player's clock time
             if (whiteFTime > 299) {
                 whiteBNumber = 5;
                 String whiteSRoundedS = "00";
@@ -607,6 +752,143 @@ public class Main extends ApplicationAdapter {
         batch.end();
     }
 
+    // NEW: Helper method to start a network game as HOST
+    private void startNetworkGameAsHost() {
+        // Get player name from the network menu
+        String playerName = networkMenu.getPlayerName();
+        if (playerName.isEmpty()) {
+            playerName = "HostPlayer"; // Default name
+        }
+
+        // Create the network game as HOST
+        networkGame = new PlayerVsNetwork(board, true, playerName);
+
+        // Set status message
+        networkStatusText = "Waiting for opponent to connect...";
+        networkWaitingForConnection = true;
+        networkWaitTimer = 0;
+
+        // Switch to network game mode
+        mode = 7;
+
+        // Reset clocks for new game
+        whiteClockRunning = false;
+        blackClockRunning = false;
+        whiteFTime = 300;
+        blackFTime = 300;
+
+        System.out.println("Started network game as HOST: " + playerName);
+    }
+
+    // NEW: Helper method to start a network game as CLIENT (join existing game)
+    private void startNetworkGameAsClient() {
+        // Get player name and IP address from the network menu
+        String playerName = networkMenu.getPlayerName();
+        if (playerName.isEmpty()) {
+            playerName = "ClientPlayer"; // Default name
+        }
+
+        String ipAddress = networkMenu.getIpAddress();
+        if (ipAddress.isEmpty()) {
+            ipAddress = "localhost"; // Default to localhost for testing
+        }
+
+        // Create the network game as CLIENT
+        networkGame = new PlayerVsNetwork(board, false, playerName);
+
+        // Try to connect to the server
+        boolean connectedSuccessfully = networkGame.connectToServer(ipAddress, 12345);
+
+        if (connectedSuccessfully) {
+            networkStatusText = "Connected! Waiting for host to start...";
+            networkWaitingForConnection = false;
+
+            // Switch to network game mode
+            mode = 7;
+
+            // Reset clocks for new game
+            whiteClockRunning = false;
+            blackClockRunning = false;
+            whiteFTime = 300;
+            blackFTime = 300;
+
+            System.out.println("Connected to network game as CLIENT: " + playerName);
+            System.out.println("Connected to server at: " + ipAddress);
+        } else {
+            networkStatusText = "Failed to connect. Check IP address and try again.";
+            System.out.println("Failed to connect to server at: " + ipAddress);
+        }
+    }
+
+    // NEW: Helper method to draw network game status information
+    private void drawNetworkGameStatus() {
+        // Update network wait timer if we're waiting
+        if (networkWaitingForConnection) {
+            networkWaitTimer += Gdx.graphics.getDeltaTime();
+        }
+
+        // Draw network connection status
+        font.getData().setScale(1f, 1f);
+
+        if (networkGame != null) {
+            if (networkGame.isConnected()) {
+                // Connected - show game info
+                font.setColor(Color.GREEN);
+                font.draw(batch, "CONNECTED", 500, 450);
+                font.draw(batch, "You: " + networkGame.getPlayerName(), 500, 430);
+                font.draw(batch, "Opponent: " + networkGame.getOpponentName(), 500, 410);
+
+                // Show whose turn it is
+                font.getData().setScale(1.2f, 1.2f);
+                if (networkGame.isWhiteTurn()) {
+                    font.setColor(Color.WHITE);
+                    font.draw(batch, "WHITE'S TURN", 500, 380);
+                } else {
+                    font.setColor(Color.BLACK);
+                    font.draw(batch, "BLACK'S TURN", 500, 380);
+                }
+
+                // Show which color the player is
+                font.getData().setScale(1f, 1f);
+                font.setColor(Color.LIGHT_GRAY);
+                if (networkGame.isWhite()) {
+                    font.draw(batch, "You are: WHITE", 500, 360);
+                } else {
+                    font.draw(batch, "You are: BLACK", 500, 360);
+                }
+
+                // Show any status messages from the network game
+                String gameStatus = networkGame.getStatusMessage();
+                if (gameStatus != null && !gameStatus.isEmpty()) {
+                    font.setColor(Color.YELLOW);
+                    font.draw(batch, gameStatus, 500, 340);
+                }
+
+            } else {
+                // Not connected yet - show waiting message
+                font.setColor(Color.YELLOW);
+                font.draw(batch, "WAITING FOR CONNECTION...", 500, 450);
+
+                // Show how long we've been waiting
+                int waitSeconds = (int)networkWaitTimer;
+                font.draw(batch, "Waiting: " + waitSeconds + " seconds", 500, 430);
+
+                // If waiting too long, show timeout warning
+                if (networkWaitTimer > 30) {
+                    font.setColor(Color.RED);
+                    font.draw(batch, "Taking too long. Check connection.", 500, 410);
+                }
+
+                // Show who is hosting
+                if (networkGame != null && networkGame.isHost()) {
+                    font.setColor(Color.CYAN);
+                    font.draw(batch, "You are HOSTING", 500, 390);
+                    font.draw(batch, "Tell opponent your IP address", 500, 370);
+                }
+            }
+        }
+    }
+
     @Override
     public void dispose() {
         batch.dispose();
@@ -624,8 +906,14 @@ public class Main extends ApplicationAdapter {
         whiteKingTex.dispose();
         blackKingTex.dispose();
         menuTexture.dispose();
+        // NEW: Dispose network menu texture
+        networkMenuTexture.dispose();
+
+        // NEW: Clean up network connections if active
+        if (networkGame != null) {
+            networkGame.disconnect();
+        }
     }
 }
 // Finished working is control+k then write what I changed then commit and push
 // Starting work is control+t then merge then pull
-

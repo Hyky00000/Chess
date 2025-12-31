@@ -1,4 +1,5 @@
 package io.github.some_example_name;
+
 import com.badlogic.gdx.graphics.Texture;
 
 public class Pawn extends Piece {
