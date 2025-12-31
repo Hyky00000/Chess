@@ -32,7 +32,7 @@ public class NetworkMessage {
         this.playerName = playerName;
     }
 
-    //message type; fromx; fromy; tox; toy; piecetype; colour; playerName; game result; chat message; port number; ip address.
+    // Convert to string for sending
     public String toString() {
         String result = "";
 
@@ -83,11 +83,11 @@ public class NetworkMessage {
         return result;
     }
 
+    // Convert from string after receiving
     public static NetworkMessage fromString(String data) {
         NetworkMessage message = new NetworkMessage("");
 
         String[] parts = data.split(";");
-
 
         if (parts.length > 0) {
             message.messageType = parts[0];
@@ -129,7 +129,7 @@ public class NetworkMessage {
             message.chatMessage = parts[9];
         }
 
-        if (parts.length > 10) {
+        if (parts.length > 10 && !parts[10].equals("")) {
             message.portNumber = Integer.parseInt(parts[10]);
         }
 
