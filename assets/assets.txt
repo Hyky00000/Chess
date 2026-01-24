@@ -5,6 +5,7 @@ BlackPawn.png
 BlackPromotion.png
 BlackQueen.png
 BlackRook.png
+ChangeGame.png
 ChessBoard.png
 ColourChoice.png
 Difficulty.png
@@ -17,4 +18,5 @@ WhitePawn.png
 WhitePromotion.png
 WhiteQueen.png
 WhiteRook.png
+changeAI.png
 libgdx.png
