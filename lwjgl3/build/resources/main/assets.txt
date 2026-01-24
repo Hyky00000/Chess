@@ -10,8 +10,15 @@ ChangeGame.png
 ChessBoard.png
 ColourChoice.png
 Difficulty.png
+FifthIncrement.png
+FirstIncrement.png
+FourthIncrement.png
 Menu.png
 NetworkMenu.png
+SecondIncrement.png
+SixthIncrement.png
+ThirdIncrement.png
+Times.png
 WhiteBishop.png
 WhiteKing.png
 WhiteKnight.png

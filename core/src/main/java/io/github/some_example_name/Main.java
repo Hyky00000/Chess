@@ -21,6 +21,13 @@ public class Main extends ApplicationAdapter {
     private Difficulty difficulty;
     private ChangeGame changeGame;
     private ChangeAI changeAI;
+    private FirstIncrement firstIncrement;
+    private SecondIncrement secondIncrement;
+    private ThirdIncrement thirdIncrement;
+    private FourthIncrement fourthIncrement;
+    private FifthIncrement fifthIncrement;
+    private SixthIncrement sixthIncrement;
+    private Times times;
     private NetworkMenu networkMenu;
     private Texture networkMenuTexture;
     private PlayerVsNetwork networkGame;
@@ -44,6 +51,13 @@ public class Main extends ApplicationAdapter {
     private Texture whiteKingTex, blackKingTex;
     private Texture changeGameTexture;
     private Texture changeAITexture;
+    private Texture firstIncrementTexture;
+    private Texture secondIncrementTexture;
+    private Texture thirdIncrementTexture;
+    private Texture fourthIncrementTexture;
+    private Texture fifthIncrementTexture;
+    private Texture sixthIncrementTexture;
+    private Texture timesTexture;
 
     private PlayerVsPlayer pvpGame;
     private PlayerVsComputer pvcGame;
@@ -54,6 +68,16 @@ public class Main extends ApplicationAdapter {
     private boolean isWhitePromotion = false;
     private float promotionMenuX, promotionMenuY;
     private int previousMode = 0;
+
+    // Time control variables
+    private float selectedTimeSeconds = 300;
+    private int selectedTimeIndex = 4;
+    private int selectedIncrementType = 0;
+    private int selectedIncrementValue = 0;
+
+    // Move tracking for sixth increment
+    private int moveCount = 0;
+    private boolean sixthIncrementApplied = false;
 
     private float blackFTime = 300;
     private float whiteFTime = 300;
@@ -68,9 +92,13 @@ public class Main extends ApplicationAdapter {
     private BitmapFont font;
 
     private boolean lastWhiteTurn = true;
+    private boolean isGameStarted = false;
 
     private boolean networkWaitingForConnection = false;
     private float networkWaitTimer = 0;
+
+    // Track which game type we're setting up (PvP or PvAI)
+    private int gameTypeAfterTimeSelection = 0; // 0: PvP, 1: PvAI
 
     @Override
     public void create() {
@@ -86,6 +114,13 @@ public class Main extends ApplicationAdapter {
         networkMenuTexture = new Texture("NetworkMenu.png");
         changeGameTexture = new Texture("ChangeGame.png");
         changeAITexture = new Texture("changeAI.png");
+        firstIncrementTexture = new Texture("FirstIncrement.png");
+        secondIncrementTexture = new Texture("SecondIncrement.png");
+        thirdIncrementTexture = new Texture("ThirdIncrement.png");
+        fourthIncrementTexture = new Texture("FourthIncrement.png");
+        fifthIncrementTexture = new Texture("FifthIncrement.png");
+        sixthIncrementTexture = new Texture("SixthIncrement.png");
+        timesTexture = new Texture("Times.png");
 
         whitePawnTex = new Texture("WhitePawn.png");
         blackPawnTex = new Texture("BlackPawn.png");
@@ -109,6 +144,13 @@ public class Main extends ApplicationAdapter {
         networkMenu = new NetworkMenu(networkMenuTexture);
         changeGame = new ChangeGame(changeGameTexture);
         changeAI = new ChangeAI(changeAITexture);
+        times = new Times(timesTexture);
+        firstIncrement = new FirstIncrement(firstIncrementTexture);
+        secondIncrement = new SecondIncrement(secondIncrementTexture);
+        thirdIncrement = new ThirdIncrement(thirdIncrementTexture);
+        fourthIncrement = new FourthIncrement(fourthIncrementTexture);
+        fifthIncrement = new FifthIncrement(fifthIncrementTexture);
+        sixthIncrement = new SixthIncrement(sixthIncrementTexture);
     }
 
     @Override
@@ -116,15 +158,23 @@ public class Main extends ApplicationAdapter {
         ScreenUtils.clear(0.15f, 0.15f, 0.2f, 1);
         batch.begin();
 
-        // 0 is start, 1 is choose colour, 2 is difficulty, 3 is vs ai, 4 is pvp, 5 is pawn promotion, 6 is network menu, 7 is network game
+        System.out.println(moveCount);
 
-        if (mode == 4 || mode == 7) {
+        // 0 is start, 1 is choose colour, 2 is difficulty, 3 is vs ai, 4 is pvp, 5 is pawn promotion,
+        // 6 is network menu, 7 is network game, 8 is times selection, 9-14 are increment selections
+
+        if (mode == 4 || mode == 7 || mode == 3) {
             changeGame.draw(batch);
             if (Gdx.input.justTouched()) {
                 float x = Gdx.input.getX();
                 float y = Gdx.graphics.getHeight() - Gdx.input.getY();
-                if (x > changeGame.getX() && x < changeGame.getX() + changeGame.getWidth() && y > changeGame.getY() && y < changeGame.getX() + changeGame.getHeight()){
+                if (x > changeGame.getX() && x < changeGame.getX() + changeGame.getWidth() && y > changeGame.getY() && y < changeGame.getX() + changeGame.getHeight()) {
                     mode = 0;
+                    isGameStarted = false;
+                    pvpGame = null;
+                    pvcGame = null;
+                    networkGame = null;
+                    resetGameState();
                 }
             }
         }
@@ -136,16 +186,17 @@ public class Main extends ApplicationAdapter {
                 float y = Gdx.graphics.getHeight() - Gdx.input.getY();
                 if (x > changeAI.getX() && x < changeAI.getX() + changeAI.getWidth() && y > changeAI.getY() && y < (changeAI.getY() + (changeAI.getHeight() / 3))) {
                     mode = 1;
+                    isGameStarted = false;
+                    pvcGame = null;
                 } else if (x > changeAI.getX() && x < changeAI.getX() + changeAI.getWidth() && y > (changeAI.getY() + changeAI.getHeight() / 3) && y < (changeAI.getY() + (changeAI.getHeight() - (changeAI.getHeight() / 3)))) {
                     mode = 2;
+                    isGameStarted = false;
+                    pvcGame = null;
                 }
             }
         }
 
         if (mode == 0) {
-            System.out.println(Gdx.graphics.getWidth());
-            System.out.println(Gdx.graphics.getHeight());
-
             board.draw(batch);
             board.drawCapturedPieces(batch);
             menu.draw(batch);
@@ -154,21 +205,20 @@ public class Main extends ApplicationAdapter {
                 float y = Gdx.graphics.getHeight() - Gdx.input.getY();
                 if ((x > menu.getX()) && (x < menu.getX() + menu.getWidth()) &&
                     (y < menu.getY() + menu.getHeight()) && (y > menu.getY() + menu.getHeight() - menuChoiceHeight)) {
-                    mode = 4;
-                    pvpGame = new PlayerVsPlayer(board);
-                    whiteClockRunning = false;
-                    blackClockRunning = false;
+                    gameTypeAfterTimeSelection = 0; // PvP
+                    mode = 8; // Go to time selection first
+                    resetGameState();
                 } else if ((x > menu.getX()) && (x < menu.getX() + menu.getWidth()) &&
                     (y < menu.getY() + ((3 * menuChoiceHeight) + (2 * menuGapHeight))) &&
                     (y > menu.getY() + ((2 * menuChoiceHeight) + (2 * menuGapHeight)))) {
                     mode = 1;
-                }
-                // NEW: Check if the third menu option (Network Play) is clicked
-                else if ((x > menu.getX()) && (x < menu.getX() + menu.getWidth()) &&
+                    resetGameState();
+                } else if ((x > menu.getX()) && (x < menu.getX() + menu.getWidth()) &&
                     (y < menu.getY() + ((2 * menuChoiceHeight) + (1 * menuGapHeight))) &&
                     (y > menu.getY() + ((1 * menuChoiceHeight) + (1 * menuGapHeight)))) {
-                    mode = 6; // Go to network menu
-                    networkMenu.reset(); // Reset network menu to fresh state
+                    mode = 6;
+                    networkMenu.reset();
+                    resetGameState();
                 }
             }
         } else if (mode == 1) {
@@ -195,36 +245,288 @@ public class Main extends ApplicationAdapter {
                 if ((x > difficulty.getX()) && (x < difficulty.getX() + difficulty.getWidth()) &&
                     (y < difficulty.getY() + (difficultyChoiceHeight * 3)) && (y > difficulty.getY())) {
                     aiDifficulty = 3;
-                    mode = 3;
-                    if (playerIsWhite) {
-                        whiteClockRunning = false;
-                        blackClockRunning = false;
-                    } else {
-                        whiteClockRunning = false;
-                        blackClockRunning = false;
-                    }
+                    gameTypeAfterTimeSelection = 1; // PvAI
+                    mode = 8; // Go to time selection
+                    resetGameState();
                 } else if ((x > difficulty.getX()) && (x < difficulty.getX() + difficulty.getWidth()) &&
                     (y < difficulty.getY() + (difficultyChoiceHeight * 2)) && (y > difficulty.getY())) {
                     aiDifficulty = 2;
-                    mode = 3;
-                    if (playerIsWhite) {
-                        whiteClockRunning = false;
-                        blackClockRunning = false;
-                    } else {
-                        whiteClockRunning = false;
-                        blackClockRunning = false;
-                    }
+                    gameTypeAfterTimeSelection = 1; // PvAI
+                    mode = 8; // Go to time selection
+                    resetGameState();
                 } else if ((x > difficulty.getX()) && (x < difficulty.getX() + difficulty.getWidth()) &&
                     (y < difficulty.getY() + (difficultyChoiceHeight * 1)) && (y > difficulty.getY())) {
                     aiDifficulty = 1;
-                    mode = 3;
-                    if (playerIsWhite) {
-                        whiteClockRunning = false;
-                        blackClockRunning = false;
-                    } else {
-                        whiteClockRunning = false;
-                        blackClockRunning = false;
+                    gameTypeAfterTimeSelection = 1; // PvAI
+                    mode = 8; // Go to time selection
+                    resetGameState();
+                }
+            }
+        } else if (mode == 8) {
+            board.draw(batch);
+            board.drawCapturedPieces(batch);
+            times.draw(batch);
+
+            if (Gdx.input.justTouched()) {
+                float x = Gdx.input.getX();
+                float y = Gdx.graphics.getHeight() - Gdx.input.getY();
+
+                if (x >= times.getX() && x <= times.getX() + times.getWidth() &&
+                    y >= times.getY() && y <= times.getY() + times.getHeight()) {
+
+                    float boxHeight = times.getHeight() / 13f;
+                    int boxIndex = -1;
+
+                    if (y < times.getY() + times.getHeight() - boxHeight && y > times.getY() + times.getHeight() - (boxHeight * 2)) {
+                        boxIndex = 1;
                     }
+                    if (y < times.getY() + times.getHeight() - (boxHeight * 2) && y > times.getY() + times.getHeight() - (boxHeight * 3)) {
+                        boxIndex = 2;
+                    }
+                    if (y < times.getY() + times.getHeight() - (boxHeight * 3) && y > times.getY() + times.getHeight() - (boxHeight * 4)) {
+                        boxIndex = 3;
+                    }
+                    if (y < times.getY() + times.getHeight() - (boxHeight * 4) && y > times.getY() + times.getHeight() - (boxHeight * 5)) {
+                        boxIndex = 4;
+                    }
+                    if (y < times.getY() + times.getHeight() - (boxHeight * 5) && y > times.getY() + times.getHeight() - (boxHeight * 6)) {
+                        boxIndex = 5;
+                    }
+                    if (y < times.getY() + times.getHeight() - (boxHeight * 6) && y > times.getY() + times.getHeight() - (boxHeight * 7)) {
+                        boxIndex = 6;
+                    }
+                    if (y < times.getY() + times.getHeight() - (boxHeight * 7) && y > times.getY() + times.getHeight() - (boxHeight * 8)) {
+                        boxIndex = 7;
+                    }
+                    if (y < times.getY() + times.getHeight() - (boxHeight * 8) && y > times.getY() + times.getHeight() - (boxHeight * 9)) {
+                        boxIndex = 8;
+                    }
+                    if (y < times.getY() + times.getHeight() - (boxHeight * 9) && y > times.getY() + times.getHeight() - (boxHeight * 10)) {
+                        boxIndex = 9;
+                    }
+                    if (y < times.getY() + times.getHeight() - (boxHeight * 10) && y > times.getY() + times.getHeight() - (boxHeight * 11)) {
+                        boxIndex = 10;
+                    }
+                    if (y < times.getY() + times.getHeight() - (boxHeight * 11) && y > times.getY() + times.getHeight() - (boxHeight * 12)) {
+                        boxIndex = 11;
+                    }
+
+                    if (boxIndex >= 1 && boxIndex <= 11) {
+                        selectedTimeIndex = boxIndex - 1;
+
+                        switch (selectedTimeIndex) {
+                            case 0:
+                                selectedTimeSeconds = 30;
+                                break;
+                            case 1:
+                                selectedTimeSeconds = 60;
+                                break;
+                            case 2:
+                                selectedTimeSeconds = 120;
+                                break;
+                            case 3:
+                                selectedTimeSeconds = 180;
+                                break;
+                            case 4:
+                                selectedTimeSeconds = 300;
+                                break;
+                            case 5:
+                                selectedTimeSeconds = 600;
+                                break;
+                            case 6:
+                                selectedTimeSeconds = 900;
+                                break;
+                            case 7:
+                                selectedTimeSeconds = 1800;
+                                break;
+                            case 8:
+                                selectedTimeSeconds = 3600;
+                                break;
+                            case 9:
+                                selectedTimeSeconds = 5400;
+                                break;
+                            case 10:
+                                selectedTimeSeconds = Float.MAX_VALUE;
+                                break;
+                        }
+
+                        if (selectedTimeIndex >= 0 && selectedTimeIndex <= 2) {
+                            mode = 9;
+                        } else if (selectedTimeIndex == 3) {
+                            mode = 10;
+                        } else if (selectedTimeIndex == 4) {
+                            mode = 11;
+                        } else if (selectedTimeIndex == 5) {
+                            mode = 12;
+                        } else if (selectedTimeIndex == 6 || selectedTimeIndex == 7) {
+                            mode = 13;
+                        } else if (selectedTimeIndex >= 8 && selectedTimeIndex <= 9) {
+                            mode = 14;
+                        } else if (selectedTimeIndex == 10) {
+                            startGameWithSelectedTime();
+                        }
+                    }
+                }
+            }
+        } else if (mode == 9) {
+            board.draw(batch);
+            board.drawCapturedPieces(batch);
+            firstIncrement.draw(batch);
+
+            if (Gdx.input.justTouched()) {
+                float x = Gdx.input.getX();
+                float y = Gdx.graphics.getHeight() - Gdx.input.getY();
+
+                if (x >= firstIncrement.getX() && x <= firstIncrement.getX() + firstIncrement.getWidth() &&
+                    y >= firstIncrement.getY() && y <= firstIncrement.getY() + firstIncrement.getHeight()) {
+
+                    if (y > firstIncrement.getY() + (firstIncrement.getHeight() / 2) && y < firstIncrement.getY() + firstIncrement.getHeight()) {
+                        selectedIncrementType = 1;
+                        selectedIncrementValue = 0;
+                    } else {
+                        selectedIncrementType = 1;
+                        selectedIncrementValue = 1;
+                    }
+
+                    startGameWithSelectedTime();
+                }
+            }
+        } else if (mode == 10) {
+            board.draw(batch);
+            board.drawCapturedPieces(batch);
+            secondIncrement.draw(batch);
+
+            if (Gdx.input.justTouched()) {
+                float x = Gdx.input.getX();
+                float y = Gdx.graphics.getHeight() - Gdx.input.getY();
+
+                if (x >= secondIncrement.getX() && x <= secondIncrement.getX() + secondIncrement.getWidth() &&
+                    y >= secondIncrement.getY() && y <= secondIncrement.getY() + secondIncrement.getHeight()) {
+
+                    if (y > secondIncrement.getY() + (secondIncrement.getHeight() / 2) && y < secondIncrement.getY() + secondIncrement.getHeight()) {
+                        selectedIncrementType = 2;
+                        selectedIncrementValue = 0;
+                    } else {
+                        selectedIncrementType = 2;
+                        selectedIncrementValue = 2;
+                    }
+
+                    startGameWithSelectedTime();
+                }
+            }
+        } else if (mode == 11) {
+            board.draw(batch);
+            board.drawCapturedPieces(batch);
+            thirdIncrement.draw(batch);
+
+            if (Gdx.input.justTouched()) {
+                float x = Gdx.input.getX();
+                float y = Gdx.graphics.getHeight() - Gdx.input.getY();
+
+                if (x >= thirdIncrement.getX() && x <= thirdIncrement.getX() + thirdIncrement.getWidth() &&
+                    y >= thirdIncrement.getY() && y <= thirdIncrement.getY() + thirdIncrement.getHeight()) {
+
+                    float thirdHeight = thirdIncrement.getHeight() / 3;
+
+                    if (y > thirdIncrement.getY() + (2 * thirdHeight) && y < thirdIncrement.getY() + (3 * thirdHeight)) {
+                        selectedIncrementType = 3;
+                        selectedIncrementValue = 3;
+                    } else if (y > thirdIncrement.getY() + thirdHeight && y < thirdIncrement.getY() + (2 * thirdHeight)) {
+                        selectedIncrementType = 3;
+                        selectedIncrementValue = 2;
+                    } else {
+                        selectedIncrementType = 3;
+                        selectedIncrementValue = 0;
+                    }
+
+                    startGameWithSelectedTime();
+                }
+            }
+        } else if (mode == 12) {
+            board.draw(batch);
+            board.drawCapturedPieces(batch);
+            fourthIncrement.draw(batch);
+
+            if (Gdx.input.justTouched()) {
+                float x = Gdx.input.getX();
+                float y = Gdx.graphics.getHeight() - Gdx.input.getY();
+
+                if (x >= fourthIncrement.getX() && x <= fourthIncrement.getX() + fourthIncrement.getWidth() &&
+                    y >= fourthIncrement.getY() && y <= fourthIncrement.getY() + fourthIncrement.getHeight()) {
+
+                    if (y > fourthIncrement.getY() + (fourthIncrement.getHeight() / 2) && y < fourthIncrement.getY() + fourthIncrement.getHeight()) {
+                        selectedIncrementType = 4;
+                        selectedIncrementValue = 300;
+                    } else {
+                        selectedIncrementType = 4;
+                        selectedIncrementValue = 0;
+                    }
+
+                    startGameWithSelectedTime();
+                }
+            }
+        } else if (mode == 13) {
+            board.draw(batch);
+            board.drawCapturedPieces(batch);
+            fifthIncrement.draw(batch);
+
+            if (Gdx.input.justTouched()) {
+                float x = Gdx.input.getX();
+                float y = Gdx.graphics.getHeight() - Gdx.input.getY();
+
+                if (x >= fifthIncrement.getX() && x <= fifthIncrement.getX() + fifthIncrement.getWidth() &&
+                    y >= fifthIncrement.getY() && y <= fifthIncrement.getY() + fifthIncrement.getHeight()) {
+
+                    float thirdHeight = fifthIncrement.getHeight() / 3;
+
+                    if (y > fifthIncrement.getY() + (2 * thirdHeight) && y < fifthIncrement.getY() + (3 * thirdHeight)) {
+                        selectedIncrementType = 5;
+                        selectedIncrementValue = 10;
+                    } else if (y > fifthIncrement.getY() + thirdHeight && y < fifthIncrement.getY() + (2 * thirdHeight)) {
+                        selectedIncrementType = 5;
+                        selectedIncrementValue = 5;
+                    } else {
+                        selectedIncrementType = 5;
+                        selectedIncrementValue = 0;
+                    }
+
+                    startGameWithSelectedTime();
+                }
+            }
+        } else if (mode == 14) {
+            board.draw(batch);
+            board.drawCapturedPieces(batch);
+            sixthIncrement.draw(batch);
+
+            if (Gdx.input.justTouched()) {
+                float x = Gdx.input.getX();
+                float y = Gdx.graphics.getHeight() - Gdx.input.getY();
+                float fifthHeight = sixthIncrement.getHeight() / 5f;
+                if (x >= sixthIncrement.getX() && x <= sixthIncrement.getX() + sixthIncrement.getWidth() &&
+                    y >= sixthIncrement.getY() && y <= sixthIncrement.getY() + sixthIncrement.getHeight() - fifthHeight) {
+
+                    if (y > sixthIncrement.getY() + (fifthHeight * 3) && y < sixthIncrement.getY() + (4 * fifthHeight)) {
+                        //no increment
+                        selectedIncrementType = 6;
+                        selectedIncrementValue = 0;
+                        System.out.println("1");
+                    } else if (y > sixthIncrement.getY() + (2 * fifthHeight) && y < sixthIncrement.getY() + (3 * fifthHeight)) {
+                        // 30 seconds
+                        selectedIncrementType = 6;
+                        selectedIncrementValue = 1;
+                        System.out.println("2");
+                    } else if (y > sixthIncrement.getY() + (1 * fifthHeight) && y < sixthIncrement.getY() + (2 * fifthHeight)) {
+                        // add 30mins to clock after 40 moves
+                        selectedIncrementType = 6;
+                        selectedIncrementValue = 2;
+                        System.out.println("3");
+                    } else if (y > sixthIncrement.getY() && y < sixthIncrement.getY() + fifthHeight) {
+                        //add 30 minutes and start 30second increment after 40 moves
+                        selectedIncrementType = 6;
+                        selectedIncrementValue = 3;
+                        System.out.println("4");
+                    }
+                    startGameWithSelectedTime();
                 }
             }
         } else if (mode == 3) {
@@ -252,9 +554,14 @@ public class Main extends ApplicationAdapter {
                         if (currentWhiteTurn) {
                             blackClockRunning = false;
                             whiteClockRunning = true;
+                            applyIncrement(false); // Black just moved
+                            moveCount++;
+
                         } else {
                             whiteClockRunning = false;
                             blackClockRunning = true;
+                            applyIncrement(true); // White just moved
+                            moveCount++;
                         }
                         lastWhiteTurn = currentWhiteTurn;
                     }
@@ -269,9 +576,13 @@ public class Main extends ApplicationAdapter {
                         if (currentWhiteTurn) {
                             blackClockRunning = false;
                             whiteClockRunning = true;
+                            applyIncrement(false); // Black just moved
+                            moveCount++;
                         } else {
                             whiteClockRunning = false;
                             blackClockRunning = true;
+                            applyIncrement(true); // White just moved
+                            moveCount++;
                         }
                         lastWhiteTurn = currentWhiteTurn;
                     }
@@ -304,9 +615,13 @@ public class Main extends ApplicationAdapter {
                         if (currentWhiteTurn) {
                             blackClockRunning = false;
                             whiteClockRunning = true;
+                            applyIncrement(false); // Black just moved
+                            moveCount++;
                         } else {
                             whiteClockRunning = false;
                             blackClockRunning = true;
+                            applyIncrement(true); // White just moved
+                            moveCount++;
                         }
                         lastWhiteTurn = currentWhiteTurn;
                     }
@@ -317,7 +632,7 @@ public class Main extends ApplicationAdapter {
             board.draw(batch);
             board.drawCapturedPieces(batch);
             float pawnX = promotingPawn.getX();
-            int pawnCol = (int)((pawnX - board.boardX - board.borderOffsetX) / board.squareSize);
+            int pawnCol = (int) ((pawnX - board.boardX - board.borderOffsetX) / board.squareSize);
             float menuX, menuY;
             if (pawnCol < 4) {
                 menuX = board.boardX + (board.width - board.borderOffsetX - 60);
@@ -351,7 +666,7 @@ public class Main extends ApplicationAdapter {
                     y >= menuY && y <= menuY + menuHeight) {
                     float relativeY = y - menuY;
                     float sectionHeight = menuHeight / 4;
-                    int choice = (int)(relativeY / sectionHeight);
+                    int choice = (int) (relativeY / sectionHeight);
                     if (choice == 0) {
                         choice = 3;
                     } else if (choice == 1) {
@@ -398,10 +713,7 @@ public class Main extends ApplicationAdapter {
                             lastWhiteTurn = currentWhiteTurn;
                         }
                     } else if (previousMode == 7) {
-                        // NEW: If we came from network game, return to network game
                         mode = 7;
-                        // Network game turn switching is handled by the network game itself
-                        // Send promotion choice to opponent if needed
                         if (networkGame != null) {
                             networkGame.sendPromotionChoice(choice);
                         }
@@ -410,87 +722,67 @@ public class Main extends ApplicationAdapter {
                     board.promotingPawn = null;
                 }
             }
-        }
-        // NEW: Mode 6 - Network Menu (Choose Host or Join)
-        else if (mode == 6) {
+        } else if (mode == 6) {
             board.draw(batch);
             board.drawCapturedPieces(batch);
             networkMenu.draw(batch);
 
-            // Handle clicks on the network menu
             if (Gdx.input.justTouched()) {
                 float x = Gdx.input.getX();
                 float y = Gdx.graphics.getHeight() - Gdx.input.getY();
 
-                // Check if click is on the network menu
                 if (x >= networkMenu.getX() && x <= networkMenu.getX() + networkMenu.getWidth() &&
                     y >= networkMenu.getY() && y <= networkMenu.getY() + networkMenu.getHeight()) {
 
-                    // Let the network menu handle the click
                     networkMenu.handleClick(x, y);
 
-                    // Check if we should start a network game
                     if (networkMenu.wantsToHost() && networkMenu.isReady()) {
-                        // Start as HOST - run in background thread to avoid freezing
                         new Thread(new Runnable() {
                             @Override
                             public void run() {
                                 startNetworkGameAsHost();
                             }
                         }).start();
-                        mode = 7; // Switch to network game mode immediately
+                        mode = 7;
                     } else if (networkMenu.wantsToJoin() && networkMenu.isReady()) {
-                        // Start as CLIENT (join existing game) - run in background thread
                         new Thread(new Runnable() {
                             @Override
                             public void run() {
                                 startNetworkGameAsClient();
                             }
                         }).start();
-                        mode = 7; // Switch to network game mode immediately
+                        mode = 7;
                     }
 
                 } else {
-                    // Clicked outside the menu - stop typing if we were typing
                     networkMenu.stopTyping();
                 }
             }
 
-            // Handle keyboard input for typing (very simple version)
-            // In a real game, you might want to use Gdx.input.getTextInput() for better typing
             if (networkMenu.isTyping()) {
-                // Simple keyboard handling - this is very basic
-                // You might want to improve this for better user experience
                 if (Gdx.input.isKeyJustPressed(com.badlogic.gdx.Input.Keys.BACKSPACE)) {
                     networkMenu.removeLastCharacter();
                 }
             }
-        }
-        // NEW: Mode 7 - Network Game (Actual online gameplay)
-        else if (mode == 7) {
-            // Check if we have a network game object
+        } else if (mode == 7) {
             if (networkGame == null) {
-                // Still connecting, just draw the board
                 board.draw(batch);
                 board.drawCapturedPieces(batch);
 
-                // Show simple waiting message in IntelliJ console
                 if (networkWaitingForConnection) {
                     networkWaitTimer += Gdx.graphics.getDeltaTime();
-                    if ((int)networkWaitTimer % 5 == 0 && (int)networkWaitTimer > 0) {
-                        System.out.println("Waiting for opponent... " + (int)networkWaitTimer + " seconds");
+                    if ((int) networkWaitTimer % 5 == 0 && (int) networkWaitTimer > 0) {
+                        System.out.println("Waiting for opponent... " + (int) networkWaitTimer + " seconds");
                     }
                 }
             } else {
-                // Update the network game to check for incoming messages
                 networkGame.update();
 
-                // Check for pawn promotion (just like other game modes)
                 if (board.promotingPawn != null) {
                     promotingPawn = board.promotingPawn;
                     isWhitePromotion = (promotingPawn.getColour() == PieceColour.WHITE);
-                    previousMode = 7; // Remember we came from network mode
-                    mode = 5; // Use the same promotion menu
+                    previousMode = 7;
+                    mode = 5;
                     if (isWhitePromotion) {
                         whiteClockRunning = true;
                         blackClockRunning = false;
@@ -499,7 +791,6 @@ public class Main extends ApplicationAdapter {
                         blackClockRunning = true;
                     }
                 } else {
-                    // Normal network gameplay
                     if (Gdx.input.justTouched()) {
                         float x = Gdx.input.getX();
                         float y = Gdx.graphics.getHeight() - Gdx.input.getY();
@@ -509,31 +800,28 @@ public class Main extends ApplicationAdapter {
                             if (currentWhiteTurn) {
                                 blackClockRunning = false;
                                 whiteClockRunning = true;
+                                applyIncrement(false);
+                                moveCount++;
                             } else {
                                 whiteClockRunning = false;
                                 blackClockRunning = true;
+                                applyIncrement(true);
+                                moveCount++;
                             }
                             lastWhiteTurn = currentWhiteTurn;
                         }
                     }
 
-                    // Draw the game board and pieces
                     networkGame.draw(batch);
                 }
             }
         }
 
         float deltaTime = Gdx.graphics.getDeltaTime();
-
         boolean gameOver = board.gameOver;
-
-
-
-        if (mode == 3 || mode == 4 || mode == 5 || mode == 7) {
+        if ((mode == 3 || mode == 4 || mode == 5 || mode == 7) && isGameStarted) {
             if (!gameOver) {
                 if (mode == 3 || mode == 4 || mode == 7) {
-                    // Normal game mode - update both clocks based on who's turn it is
-
                     if (whiteClockRunning && whiteFTime > 0) {
                         whiteFTime = whiteFTime - deltaTime;
                         if (whiteFTime <= 0) {
@@ -548,10 +836,7 @@ public class Main extends ApplicationAdapter {
                         }
                     }
                 } else if (mode == 5) {
-                    // Promotion mode - only the promoting player's clock runs
-
                     if (isWhitePromotion) {
-                        // White is choosing piece - only white clock runs
                         if (whiteClockRunning && whiteFTime > 0) {
                             whiteFTime = whiteFTime - deltaTime;
                             if (whiteFTime <= 0) {
@@ -559,7 +844,6 @@ public class Main extends ApplicationAdapter {
                             }
                         }
                     } else {
-                        // Black is choosing piece - only black clock runs
                         if (blackClockRunning && blackFTime > 0) {
                             blackFTime = blackFTime - deltaTime;
                             if (blackFTime <= 0) {
@@ -570,274 +854,291 @@ public class Main extends ApplicationAdapter {
                 }
             }
 
-            // Draw the black player's clock time
-            if (blackFTime > 299) {
-                blackBNumber = 5;
-                String blackSRoundedS = "00";
-                font.draw(batch, "Black: " + Integer.toString(blackBNumber) + ":" + blackSRoundedS, 490, 280);
+            if (selectedTimeIndex == 10 && selectedTimeSeconds == Float.MAX_VALUE) {
+                font.draw(batch, "Black: ∞", 490, 280);
+                font.draw(batch, "White: ∞", 485, 225);
                 font.getData().setScale(2, 2);
                 font.setColor(Color.WHITE);
-            }
-            if (blackFTime <= 299 && blackFTime > 240) {
-                blackBNumber = 4;
-                blackSNumber = ((blackFTime / 60) - blackBNumber) * 60;
-                blackSRounded = (int) Math.ceil(blackSNumber);
-                if (blackSRounded >= 1 && blackSRounded <= 9) {
-                    String blackSRoundedS = "0" + Integer.toString(blackSRounded);
+            } else {
+                // Draw the black player's clock time using your exact format
+                if (blackFTime > 3599) {
+                    int hours = (int) (blackFTime / 3600);
+                    int minutes = (int) ((blackFTime % 3600) / 60);
+                    int seconds = (int) (blackFTime % 60);
+                    String minutesStr = (minutes < 10) ? "0" + Integer.toString(minutes) : Integer.toString(minutes);
+                    String secondsStr = (seconds < 10) ? "0" + Integer.toString(seconds) : Integer.toString(seconds);
+                    font.draw(batch, Integer.toString(hours) + ":" + minutesStr + ":" + secondsStr, 490, 280);
+                } else if (blackFTime > 299) {
+                    blackBNumber = (int) (blackFTime / 60);
+                    String blackSRoundedS = "00";
                     font.draw(batch, "Black: " + Integer.toString(blackBNumber) + ":" + blackSRoundedS, 490, 280);
-                } else {
-                    font.draw(batch, "Black: " + Integer.toString(blackBNumber) + ":" + Integer.toString(blackSRounded), 490, 280);
-                }
-                font.getData().setScale(2, 2);
-                font.setColor(Color.WHITE);
-            }
-            if (blackFTime > 239 && blackFTime <= 240) {
-                blackBNumber = 4;
-                String blackSRoundedS = "00";
-                font.draw(batch, "Black: " + Integer.toString(blackBNumber) + ":" + blackSRoundedS, 490, 280);
-                font.getData().setScale(2, 2);
-                font.setColor(Color.WHITE);
-            }
-            if (blackFTime <= 239 && blackFTime > 180) {
-                blackBNumber = 3;
-                blackSNumber = ((blackFTime / 60) - blackBNumber) * 60;
-                blackSRounded = (int) Math.ceil(blackSNumber);
-                if (blackSRounded >= 1 && blackSRounded <= 9) {
-                    String blackSRoundedS = "0" + Integer.toString(blackSRounded);
+                } else if (blackFTime <= 299 && blackFTime > 240) {
+                    blackBNumber = 4;
+                    blackSNumber = ((blackFTime / 60) - blackBNumber) * 60;
+                    blackSRounded = (int) Math.ceil(blackSNumber);
+                    if (blackSRounded >= 1 && blackSRounded <= 9) {
+                        String blackSRoundedS = "0" + Integer.toString(blackSRounded);
+                        font.draw(batch, "Black: " + Integer.toString(blackBNumber) + ":" + blackSRoundedS, 490, 280);
+                    } else {
+                        font.draw(batch, "Black: " + Integer.toString(blackBNumber) + ":" + Integer.toString(blackSRounded), 490, 280);
+                    }
+                } else if (blackFTime > 239 && blackFTime <= 240) {
+                    blackBNumber = 4;
+                    String blackSRoundedS = "00";
                     font.draw(batch, "Black: " + Integer.toString(blackBNumber) + ":" + blackSRoundedS, 490, 280);
-                } else {
-                    font.draw(batch, "Black: " + Integer.toString(blackBNumber) + ":" + Integer.toString(blackSRounded), 490, 280);
-                }
-                font.getData().setScale(2, 2);
-                font.setColor(Color.WHITE);
-            }
-            if (blackFTime > 179 && blackFTime <= 180) {
-                blackBNumber = 3;
-                String blackSRoundedS = "00";
-                font.draw(batch, "Black: " + Integer.toString(blackBNumber) + ":" + blackSRoundedS, 490, 280);
-                font.getData().setScale(2, 2);
-                font.setColor(Color.WHITE);
-            }
-            if (blackFTime <= 179 && blackFTime > 120) {
-                blackBNumber = 2;
-                blackSNumber = ((blackFTime / 60) - blackBNumber) * 60;
-                blackSRounded = (int) Math.ceil(blackSNumber);
-                if (blackSRounded >= 1 && blackSRounded <= 9) {
-                    String blackSRoundedS = "0" + Integer.toString(blackSRounded);
+                } else if (blackFTime <= 239 && blackFTime > 180) {
+                    blackBNumber = 3;
+                    blackSNumber = ((blackFTime / 60) - blackBNumber) * 60;
+                    blackSRounded = (int) Math.ceil(blackSNumber);
+                    if (blackSRounded >= 1 && blackSRounded <= 9) {
+                        String blackSRoundedS = "0" + Integer.toString(blackSRounded);
+                        font.draw(batch, "Black: " + Integer.toString(blackBNumber) + ":" + blackSRoundedS, 490, 280);
+                    } else {
+                        font.draw(batch, "Black: " + Integer.toString(blackBNumber) + ":" + Integer.toString(blackSRounded), 490, 280);
+                    }
+                } else if (blackFTime > 179 && blackFTime <= 180) {
+                    blackBNumber = 3;
+                    String blackSRoundedS = "00";
                     font.draw(batch, "Black: " + Integer.toString(blackBNumber) + ":" + blackSRoundedS, 490, 280);
-                } else {
-                    font.draw(batch, "Black: " + Integer.toString(blackBNumber) + ":" + Integer.toString(blackSRounded), 490, 280);
-                }
-                font.getData().setScale(2, 2);
-                font.setColor(Color.WHITE);
-            }
-            if (blackFTime > 119 && blackFTime <= 120) {
-                blackBNumber = 2;
-                String blackSRoundedS = "00";
-                font.draw(batch, "Black: " + Integer.toString(blackBNumber) + ":" + blackSRoundedS, 490, 280);
-                font.getData().setScale(2, 2);
-                font.setColor(Color.WHITE);
-            }
-            if (blackFTime <= 119 && blackFTime > 60) {
-                blackBNumber = 1;
-                blackSNumber = ((blackFTime / 60) - blackBNumber) * 60;
-                blackSRounded = (int) Math.ceil(blackSNumber);
-                if (blackSRounded >= 1 && blackSRounded <= 9) {
-                    String blackSRoundedS = "0" + Integer.toString(blackSRounded);
+                } else if (blackFTime <= 179 && blackFTime > 120) {
+                    blackBNumber = 2;
+                    blackSNumber = ((blackFTime / 60) - blackBNumber) * 60;
+                    blackSRounded = (int) Math.ceil(blackSNumber);
+                    if (blackSRounded >= 1 && blackSRounded <= 9) {
+                        String blackSRoundedS = "0" + Integer.toString(blackSRounded);
+                        font.draw(batch, "Black: " + Integer.toString(blackBNumber) + ":" + blackSRoundedS, 490, 280);
+                    } else {
+                        font.draw(batch, "Black: " + Integer.toString(blackBNumber) + ":" + Integer.toString(blackSRounded), 490, 280);
+                    }
+                } else if (blackFTime > 119 && blackFTime <= 120) {
+                    blackBNumber = 2;
+                    String blackSRoundedS = "00";
                     font.draw(batch, "Black: " + Integer.toString(blackBNumber) + ":" + blackSRoundedS, 490, 280);
-                } else {
-                    font.draw(batch, "Black: " + Integer.toString(blackBNumber) + ":" + Integer.toString(blackSRounded), 490, 280);
-                }
-                font.getData().setScale(2, 2);
-                font.setColor(Color.WHITE);
-            }
-            if (blackFTime > 59 && blackFTime <= 60) {
-                blackBNumber = 1;
-                String blackSRoundedS = "00";
-                font.draw(batch, "Black: " + Integer.toString(blackBNumber) + ":" + blackSRoundedS, 490, 280);
-                font.getData().setScale(2, 2);
-                font.setColor(Color.WHITE);
-            }
-            if (blackFTime <= 59 && blackFTime > 0) {
-                blackBNumber = 0;
-                blackSNumber = ((blackFTime / 60) - blackBNumber) * 60;
-                blackSRounded = (int) Math.ceil(blackSNumber);
-                if (blackSRounded >= 1 && blackSRounded <= 9) {
-                    String blackSRoundedS = "0" + Integer.toString(blackSRounded);
+                } else if (blackFTime <= 119 && blackFTime > 60) {
+                    blackBNumber = 1;
+                    blackSNumber = ((blackFTime / 60) - blackBNumber) * 60;
+                    blackSRounded = (int) Math.ceil(blackSNumber);
+                    if (blackSRounded >= 1 && blackSRounded <= 9) {
+                        String blackSRoundedS = "0" + Integer.toString(blackSRounded);
+                        font.draw(batch, "Black: " + Integer.toString(blackBNumber) + ":" + blackSRoundedS, 490, 280);
+                    } else {
+                        font.draw(batch, "Black: " + Integer.toString(blackBNumber) + ":" + Integer.toString(blackSRounded), 490, 280);
+                    }
+                } else if (blackFTime > 59 && blackFTime <= 60) {
+                    blackBNumber = 1;
+                    String blackSRoundedS = "00";
                     font.draw(batch, "Black: " + Integer.toString(blackBNumber) + ":" + blackSRoundedS, 490, 280);
-                } else {
-                    font.draw(batch, "Black: " + Integer.toString(blackBNumber) + ":" + Integer.toString(blackSRounded), 490, 280);
+                } else if (blackFTime <= 59 && blackFTime > 0) {
+                    blackBNumber = 0;
+                    blackSNumber = ((blackFTime / 60) - blackBNumber) * 60;
+                    blackSRounded = (int) Math.ceil(blackSNumber);
+                    if (blackSRounded >= 1 && blackSRounded <= 9) {
+                        String blackSRoundedS = "0" + Integer.toString(blackSRounded);
+                        font.draw(batch, "Black: " + Integer.toString(blackBNumber) + ":" + blackSRoundedS, 490, 280);
+                    } else {
+                        font.draw(batch, "Black: " + Integer.toString(blackBNumber) + ":" + Integer.toString(blackSRounded), 490, 280);
+                    }
                 }
-                font.getData().setScale(2, 2);
-                font.setColor(Color.WHITE);
-            }
 
-            // Draw the white player's clock time
-            if (whiteFTime > 299) {
-                whiteBNumber = 5;
-                String whiteSRoundedS = "00";
-                font.draw(batch, "White: " + Integer.toString(whiteBNumber) + ":" + whiteSRoundedS, 485, 225);
-                font.getData().setScale(2, 2);
-                font.setColor(Color.WHITE);
-            }
-            if (whiteFTime <= 299 && whiteFTime > 240) {
-                whiteBNumber = 4;
-                whiteSNumber = ((whiteFTime / 60) - whiteBNumber) * 60;
-                whiteSRounded = (int) Math.ceil(whiteSNumber);
-                if (whiteSRounded >= 1 && whiteSRounded <= 9) {
-                    String whiteSRoundedS = "0" + Integer.toString(whiteSRounded);
+                // Draw the white player's clock time
+                if (whiteFTime > 3599) {
+                    int hours = (int) (whiteFTime / 3600);
+                    int minutes = (int) ((whiteFTime % 3600) / 60);
+                    int seconds = (int) (whiteFTime % 60);
+                    String minutesStr = (minutes < 10) ? "0" + Integer.toString(minutes) : Integer.toString(minutes);
+                    String secondsStr = (seconds < 10) ? "0" + Integer.toString(seconds) : Integer.toString(seconds);
+                    font.draw(batch, Integer.toString(hours) + ":" + minutesStr + ":" + secondsStr, 485, 225);
+                } else if (whiteFTime > 299) {
+                    whiteBNumber = (int) (whiteFTime / 60);
+                    String whiteSRoundedS = "00";
                     font.draw(batch, "White: " + Integer.toString(whiteBNumber) + ":" + whiteSRoundedS, 485, 225);
-                } else {
-                    font.draw(batch, "White: " + Integer.toString(whiteBNumber) + ":" + Integer.toString(whiteSRounded), 485, 225);
-                }
-                font.getData().setScale(2, 2);
-                font.setColor(Color.WHITE);
-            }
-            if (whiteFTime > 239 && whiteFTime <= 240) {
-                whiteBNumber = 4;
-                String whiteSRoundedS = "00";
-                font.draw(batch, "White: " + Integer.toString(whiteBNumber) + ":" + whiteSRoundedS, 485, 225);
-                font.getData().setScale(2, 2);
-                font.setColor(Color.WHITE);
-            }
-            if (whiteFTime <= 239 && whiteFTime > 180) {
-                whiteBNumber = 3;
-                whiteSNumber = ((whiteFTime / 60) - whiteBNumber) * 60;
-                whiteSRounded = (int) Math.ceil(whiteSNumber);
-                if (whiteSRounded >= 1 && whiteSRounded <= 9) {
-                    String whiteSRoundedS = "0" + Integer.toString(whiteSRounded);
+                } else if (whiteFTime <= 299 && whiteFTime > 240) {
+                    whiteBNumber = 4;
+                    whiteSNumber = ((whiteFTime / 60) - whiteBNumber) * 60;
+                    whiteSRounded = (int) Math.ceil(whiteSNumber);
+                    if (whiteSRounded >= 1 && whiteSRounded <= 9) {
+                        String whiteSRoundedS = "0" + Integer.toString(whiteSRounded);
+                        font.draw(batch, "White: " + Integer.toString(whiteBNumber) + ":" + whiteSRoundedS, 485, 225);
+                    } else {
+                        font.draw(batch, "White: " + Integer.toString(whiteBNumber) + ":" + Integer.toString(whiteSRounded), 485, 225);
+                    }
+                } else if (whiteFTime > 239 && whiteFTime <= 240) {
+                    whiteBNumber = 4;
+                    String whiteSRoundedS = "00";
+                    font.draw(batch, "White: " + Integer.toString(whiteBNumber) + ":" + whiteSRoundedS, 485, 225);
+                } else if (whiteFTime <= 239 && whiteFTime > 180) {
+                    whiteBNumber = 3;
+                    whiteSNumber = ((whiteFTime / 60) - whiteBNumber) * 60;
+                    whiteSRounded = (int) Math.ceil(whiteSNumber);
+                    if (whiteSRounded >= 1 && whiteSRounded <= 9) {
+                        String whiteSRoundedS = "0" + Integer.toString(whiteSRounded);
+                        font.draw(batch, "White: " + Integer.toString(whiteBNumber) + ":" + whiteSRoundedS, 490, 225);
+                    } else {
+                        font.draw(batch, "White: " + Integer.toString(whiteBNumber) + ":" + Integer.toString(whiteSRounded), 490, 225);
+                    }
+                } else if (whiteFTime > 179 && whiteFTime <= 180) {
+                    whiteBNumber = 3;
+                    String whiteSRoundedS = "00";
                     font.draw(batch, "White: " + Integer.toString(whiteBNumber) + ":" + whiteSRoundedS, 490, 225);
-                } else {
-                    font.draw(batch, "White: " + Integer.toString(whiteBNumber) + ":" + Integer.toString(whiteSRounded), 490, 225);
-                }
-                font.getData().setScale(2, 2);
-                font.setColor(Color.WHITE);
-            }
-            if (whiteFTime > 179 && whiteFTime <= 180) {
-                whiteBNumber = 3;
-                String whiteSRoundedS = "00";
-                font.draw(batch, "White: " + Integer.toString(whiteBNumber) + ":" + whiteSRoundedS, 490, 225);
-                font.getData().setScale(2, 2);
-                font.setColor(Color.WHITE);
-            }
-            if (whiteFTime <= 179 && whiteFTime > 120) {
-                whiteBNumber = 2;
-                whiteSNumber = ((whiteFTime / 60) - whiteBNumber) * 60;
-                whiteSRounded = (int) Math.ceil(whiteSNumber);
-                if (whiteSRounded >= 1 && whiteSRounded <= 9) {
-                    String whiteSRoundedS = "0" + Integer.toString(whiteSRounded);
+                } else if (whiteFTime <= 179 && whiteFTime > 120) {
+                    whiteBNumber = 2;
+                    whiteSNumber = ((whiteFTime / 60) - whiteBNumber) * 60;
+                    whiteSRounded = (int) Math.ceil(whiteSNumber);
+                    if (whiteSRounded >= 1 && whiteSRounded <= 9) {
+                        String whiteSRoundedS = "0" + Integer.toString(whiteSRounded);
+                        font.draw(batch, "White: " + Integer.toString(whiteBNumber) + ":" + whiteSRoundedS, 490, 225);
+                    } else {
+                        font.draw(batch, "White: " + Integer.toString(whiteBNumber) + ":" + Integer.toString(whiteSRounded), 490, 225);
+                    }
+                } else if (whiteFTime > 119 && whiteFTime <= 120) {
+                    whiteBNumber = 2;
+                    String whiteSRoundedS = "00";
                     font.draw(batch, "White: " + Integer.toString(whiteBNumber) + ":" + whiteSRoundedS, 490, 225);
-                } else {
-                    font.draw(batch, "White: " + Integer.toString(whiteBNumber) + ":" + Integer.toString(whiteSRounded), 490, 225);
-                }
-                font.getData().setScale(2, 2);
-                font.setColor(Color.WHITE);
-            }
-            if (whiteFTime > 119 && whiteFTime <= 120) {
-                whiteBNumber = 2;
-                String whiteSRoundedS = "00";
-                font.draw(batch, "White: " + Integer.toString(whiteBNumber) + ":" + whiteSRoundedS, 490, 225);
-                font.getData().setScale(2, 2);
-                font.setColor(Color.WHITE);
-            }
-            if (whiteFTime <= 119 && whiteFTime > 60) {
-                whiteBNumber = 1;
-                whiteSNumber = ((whiteFTime / 60) - whiteBNumber) * 60;
-                whiteSRounded = (int) Math.ceil(whiteSNumber);
-                if (whiteSRounded >= 1 && whiteSRounded <= 9) {
-                    String whiteSRoundedS = "0" + Integer.toString(whiteSRounded);
+                } else if (whiteFTime <= 119 && whiteFTime > 60) {
+                    whiteBNumber = 1;
+                    whiteSNumber = ((whiteFTime / 60) - whiteBNumber) * 60;
+                    whiteSRounded = (int) Math.ceil(whiteSNumber);
+                    if (whiteSRounded >= 1 && whiteSRounded <= 9) {
+                        String whiteSRoundedS = "0" + Integer.toString(whiteSRounded);
+                        font.draw(batch, "White: " + Integer.toString(whiteBNumber) + ":" + whiteSRoundedS, 490, 225);
+                    } else {
+                        font.draw(batch, "White: " + Integer.toString(whiteBNumber) + ":" + Integer.toString(whiteSRounded), 490, 225);
+                    }
+                } else if (whiteFTime > 59 && whiteFTime <= 60) {
+                    whiteBNumber = 1;
+                    String whiteSRoundedS = "00";
                     font.draw(batch, "White: " + Integer.toString(whiteBNumber) + ":" + whiteSRoundedS, 490, 225);
-                } else {
-                    font.draw(batch, "White: " + Integer.toString(whiteBNumber) + ":" + Integer.toString(whiteSRounded), 490, 225);
-                }
-                font.getData().setScale(2, 2);
-                font.setColor(Color.WHITE);
-            }
-            if (whiteFTime > 59 && whiteFTime <= 60) {
-                whiteBNumber = 1;
-                String whiteSRoundedS = "00";
-                font.draw(batch, "White: " + Integer.toString(whiteBNumber) + ":" + whiteSRoundedS, 490, 225);
-                font.getData().setScale(2, 2);
-                font.setColor(Color.WHITE);
-            }
-            if (whiteFTime <= 59 && whiteFTime > 0) {
-                whiteBNumber = 0;
-                whiteSNumber = ((whiteFTime / 60) - whiteBNumber) * 60;
-                whiteSRounded = (int) Math.ceil(whiteSNumber);
-                if (whiteSRounded >= 1 && whiteSRounded <= 9) {
-                    String whiteSRoundedS = "0" + Integer.toString(whiteSRounded);
-                    font.draw(batch, "White: " + Integer.toString(whiteBNumber) + ":" + whiteSRoundedS, 490, 225);
-                } else {
-                    font.draw(batch, "White: " + Integer.toString(whiteBNumber) + ":" + Integer.toString(whiteSRounded), 490, 225);
+                } else if (whiteFTime <= 59 && whiteFTime > 0) {
+                    whiteBNumber = 0;
+                    whiteSNumber = ((whiteFTime / 60) - whiteBNumber) * 60;
+                    whiteSRounded = (int) Math.ceil(whiteSNumber);
+                    if (whiteSRounded >= 1 && whiteSRounded <= 9) {
+                        String whiteSRoundedS = "0" + Integer.toString(whiteSRounded);
+                        font.draw(batch, "White: " + Integer.toString(whiteBNumber) + ":" + whiteSRoundedS, 490, 225);
+                    } else {
+                        font.draw(batch, "White: " + Integer.toString(whiteBNumber) + ":" + Integer.toString(whiteSRounded), 490, 225);
+                    }
                 }
                 font.getData().setScale(2, 2);
                 font.setColor(Color.WHITE);
             }
         }
-
         batch.end();
     }
 
-    // NEW: Helper method to start a network game as HOST
-    private void startNetworkGameAsHost() {
-        // Get player name from the network menu
-        String playerName = networkMenu.getPlayerName();
-        if (playerName.isEmpty()) {
-            playerName = "HostPlayer"; // Default name
+    private void applyIncrement(boolean isWhite) {
+        if (selectedIncrementType != 6) {
+            if (selectedIncrementType != 0 && selectedIncrementValue > 0) {
+                if (isWhite) {
+                    whiteFTime += selectedIncrementValue;
+                } else {
+                    blackFTime += selectedIncrementValue;
+                }
+            }
         }
-
-        // Create the network game as HOST
-        networkGame = new PlayerVsNetwork(board, true, playerName);
-
-        // Set waiting flag
-        networkWaitingForConnection = true;
-        networkWaitTimer = 0;
-
-        // Reset clocks for new game
-        whiteClockRunning = false;
-        blackClockRunning = false;
-        whiteFTime = 300;
-        blackFTime = 300;
-
-        System.out.println("Started network game as HOST: " + playerName);
-        System.out.println("Waiting for opponent to connect...");
+        else if (selectedIncrementType == 6) {
+            if (selectedIncrementValue == 1) {
+                if (isWhite) {
+                    whiteFTime += 30;
+                } else {
+                    blackFTime += 30;
+                }
+            }
+            else if (selectedIncrementValue == 2) {
+                if (!sixthIncrementApplied) {
+                    if (isWhite && moveCount == 79) {
+                        whiteFTime += 1800;
+                        sixthIncrementApplied = true;
+                    } else if (!isWhite && moveCount == 80) {
+                        blackFTime += 1800;
+                        sixthIncrementApplied = true;
+                    }
+                }
+            }
+            else if (selectedIncrementValue == 3) {
+                if (moveCount >= 80) {
+                    if (!sixthIncrementApplied) {
+                        if (isWhite && moveCount == 79) {
+                            whiteFTime += 1800;
+                        } else if (!isWhite && moveCount == 80) {
+                            blackFTime += 1800;
+                        }
+                        sixthIncrementApplied = true;
+                    }
+                    if (isWhite) {
+                        whiteFTime += 30;
+                    } else {
+                        blackFTime += 30;
+                    }
+                }
+            }
+        }
     }
 
-    // NEW: Helper method to start a network game as CLIENT (join existing game)
-    private void startNetworkGameAsClient() {
-        // Get player name and IP address from the network menu
+    private void startGameWithSelectedTime() {
+        whiteFTime = selectedTimeSeconds;
+        blackFTime = selectedTimeSeconds;
+        moveCount = 0;
+        sixthIncrementApplied = false;
+        isGameStarted = true;
+
+        whiteClockRunning = false;
+        blackClockRunning = false;
+        lastWhiteTurn = true;
+
+        if (gameTypeAfterTimeSelection == 0) {
+            pvpGame = new PlayerVsPlayer(board);
+            mode = 4;
+        } else {
+            pvcGame = new PlayerVsComputer(board, playerIsWhite, aiDifficulty);
+            mode = 3;
+        }
+    }
+
+    private void resetGameState() {
+        whiteFTime = selectedTimeSeconds;
+        blackFTime = selectedTimeSeconds;
+        moveCount = 0;
+        sixthIncrementApplied = false;
+        whiteClockRunning = false;
+        blackClockRunning = false;
+        lastWhiteTurn = true;
+        isGameStarted = false;
+    }
+
+    private void startNetworkGameAsHost() {
         String playerName = networkMenu.getPlayerName();
         if (playerName.isEmpty()) {
-            playerName = "ClientPlayer"; // Default name
+            playerName = "HostPlayer";
+        }
+
+        networkGame = new PlayerVsNetwork(board, true, playerName);
+        networkWaitingForConnection = true;
+        networkWaitTimer = 0;
+        resetGameState();
+        System.out.println("Started network game as HOST: " + playerName);
+    }
+
+    private void startNetworkGameAsClient() {
+        String playerName = networkMenu.getPlayerName();
+        if (playerName.isEmpty()) {
+            playerName = "ClientPlayer";
         }
 
         String ipAddress = networkMenu.getIpAddress();
         if (ipAddress.isEmpty()) {
-            ipAddress = "localhost"; // Default to localhost for testing
+            ipAddress = "localhost";
         }
 
-        // Create the network game as CLIENT
         networkGame = new PlayerVsNetwork(board, false, playerName);
-
-        // Try to connect to the server
         boolean connectedSuccessfully = networkGame.connectToServer(ipAddress, 12345);
 
         if (connectedSuccessfully) {
             networkWaitingForConnection = false;
-
-            // Reset clocks for new game
-            whiteClockRunning = false;
-            blackClockRunning = false;
-            whiteFTime = 300;
-            blackFTime = 300;
-
+            resetGameState();
             System.out.println("Connected to network game as CLIENT: " + playerName);
-            System.out.println("Connected to server at: " + ipAddress);
         } else {
             System.out.println("Failed to connect to server at: " + ipAddress);
-            System.out.println("Check IP address and try again.");
-
-            // Go back to network menu if connection fails
             mode = 6;
             networkGame = null;
         }
@@ -870,4 +1171,4 @@ public class Main extends ApplicationAdapter {
 // Starting work is control+t then merge then pull
 // 640 x 480
 // PC IPv4: 192.168.137.1
-// laptop IPv4: 192.168.0.68
+// laptop IPv4: 192.168.0.68.
