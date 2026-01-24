@@ -19,7 +19,8 @@ public class Main extends ApplicationAdapter {
     private WhitePromotion whitePromotion;
     private BlackPromotion blackPromotion;
     private Difficulty difficulty;
-    // NEW: Network multiplayer variables
+    private ChangeGame changeGame;
+    private ChangeAI changeAI;
     private NetworkMenu networkMenu;
     private Texture networkMenuTexture;
     private PlayerVsNetwork networkGame;
@@ -41,6 +42,8 @@ public class Main extends ApplicationAdapter {
     private Texture whiteBishopTex, blackBishopTex;
     private Texture whiteQueenTex, blackQueenTex;
     private Texture whiteKingTex, blackKingTex;
+    private Texture changeGameTexture;
+    private Texture changeAITexture;
 
     private PlayerVsPlayer pvpGame;
     private PlayerVsComputer pvcGame;
@@ -66,7 +69,6 @@ public class Main extends ApplicationAdapter {
 
     private boolean lastWhiteTurn = true;
 
-    // NEW: Variables for network game status
     private boolean networkWaitingForConnection = false;
     private float networkWaitTimer = 0;
 
@@ -82,6 +84,8 @@ public class Main extends ApplicationAdapter {
         boardTexture = new Texture("ChessBoard.png");
         menuTexture = new Texture("Menu.png");
         networkMenuTexture = new Texture("NetworkMenu.png");
+        changeGameTexture = new Texture("ChangeGame.png");
+        changeAITexture = new Texture("changeAI.png");
 
         whitePawnTex = new Texture("WhitePawn.png");
         blackPawnTex = new Texture("BlackPawn.png");
@@ -103,6 +107,8 @@ public class Main extends ApplicationAdapter {
         whitePromotion = new WhitePromotion(whitePromotionTexture);
         blackPromotion = new BlackPromotion(blackPromotionTexture);
         networkMenu = new NetworkMenu(networkMenuTexture);
+        changeGame = new ChangeGame(changeGameTexture);
+        changeAI = new ChangeAI(changeAITexture);
     }
 
     @Override
@@ -112,7 +118,34 @@ public class Main extends ApplicationAdapter {
 
         // 0 is start, 1 is choose colour, 2 is difficulty, 3 is vs ai, 4 is pvp, 5 is pawn promotion, 6 is network menu, 7 is network game
 
+        if (mode == 4 || mode == 7) {
+            changeGame.draw(batch);
+            if (Gdx.input.justTouched()) {
+                float x = Gdx.input.getX();
+                float y = Gdx.graphics.getHeight() - Gdx.input.getY();
+                if (x > changeGame.getX() && x < changeGame.getX() + changeGame.getWidth() && y > changeGame.getY() && y < changeGame.getX() + changeGame.getHeight()){
+                    mode = 0;
+                }
+            }
+        }
+
+        if (mode == 3) {
+            changeAI.draw(batch);
+            if (Gdx.input.justTouched()) {
+                float x = Gdx.input.getX();
+                float y = Gdx.graphics.getHeight() - Gdx.input.getY();
+                if (x > changeAI.getX() && x < changeAI.getX() + changeAI.getWidth() && y > changeAI.getY() && y < (changeAI.getY() + (changeAI.getHeight() / 3))) {
+                    mode = 1;
+                } else if (x > changeAI.getX() && x < changeAI.getX() + changeAI.getWidth() && y > (changeAI.getY() + changeAI.getHeight() / 3) && y < (changeAI.getY() + (changeAI.getHeight() - (changeAI.getHeight() / 3)))) {
+                    mode = 2;
+                }
+            }
+        }
+
         if (mode == 0) {
+            System.out.println(Gdx.graphics.getWidth());
+            System.out.println(Gdx.graphics.getHeight());
+
             board.draw(batch);
             board.drawCapturedPieces(batch);
             menu.draw(batch);
@@ -827,10 +860,7 @@ public class Main extends ApplicationAdapter {
         whiteKingTex.dispose();
         blackKingTex.dispose();
         menuTexture.dispose();
-        // NEW: Dispose network menu texture
         networkMenuTexture.dispose();
-
-        // NEW: Clean up network connections if active
         if (networkGame != null) {
             networkGame.disconnect();
         }
@@ -838,5 +868,6 @@ public class Main extends ApplicationAdapter {
 }
 // Finished working is control+k then write what I changed then commit and push
 // Starting work is control+t then merge then pull
+// 640 x 480
 // PC IPv4: 192.168.137.1
 // laptop IPv4: 192.168.0.68
