@@ -6,7 +6,7 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 public class Times {
 
     private Texture timesTexture;
-    public static float x = 0;
+    public static float x = 59.04761905f;
     public static float y = 0f;
     public float width = 361.9047619f;
     public float height = 480f;
