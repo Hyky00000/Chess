@@ -7,7 +7,7 @@ public class SecondIncrement {
 
     private Texture secondIncrementTexture;
     public static float x = 0;
-    public static float y = 0f;
+    public static float y = 161.5667075f;
     public float width = 480f;
     public float height = 156.8665851f;
 

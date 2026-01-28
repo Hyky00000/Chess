@@ -77,7 +77,7 @@ public class Board {
         }
     }
 
-    public void ResetGame(){
+    public void ResetGame() {
         float pieceOffsetX = boardX + borderOffsetX;
         float pieceOffsetY = boardY + borderOffsetY;
         float pieceMiddle = (squareSize - 56) / 2f;
@@ -91,7 +91,7 @@ public class Board {
             pieces[8 + i].setX(pieceOffsetX + i * squareSize + px);
             pieces[8 + i].setY(pieceOffsetY + 1 * squareSize + py);
         }
-        for (int i = 16; i < 24; i++){
+        for (int i = 16; i < 24; i++) {
             pieces[i].setX(pieceOffsetX + (i - 16) * squareSize + px);
             pieces[i].setY(pieceOffsetY + 7 * squareSize + py);
         }
@@ -99,12 +99,33 @@ public class Board {
             pieces[24 + i].setX(pieceOffsetX + i * squareSize + px);
             pieces[24 + i].setY(pieceOffsetY + 6 * squareSize + py);
         }
-        for (int i = 0; i < capturedWhitePieces.length; i++){
-            if (capturedWhitePieces[i] != null){
-                capturedWhitePieces[i].setX(1000);
+        for (int i = 0; i < capturedWhitePieces.length; i++) {
+            capturedWhitePieces[i] = null;
+        }
+        for (int i = 0; i < capturedBlackPieces.length; i++) {
+            capturedBlackPieces[i] = null;
+        }
+        whiteCapturedCount = 0;
+        blackCapturedCount = 0;
+        gameOver = false;
+        gameResult = "";
+        promotingPawn = null;
+        whiteTurn = true;
+        lastMovedPiece = null;
+        whitePCaptured = 0;
+        blackPCaptured = 0;
+
+        for (Piece piece : pieces) {
+            if (piece instanceof Pawn) {
+                Pawn pawn = (Pawn) piece;
+                pawn.justMovedTwoSquares = false;
+                pawn.wasLastMove = false;
             }
-            if(capturedBlackPieces[i] != null){
-                capturedBlackPieces[i].setX(1000);
+            if (piece instanceof Rook) {
+                ((Rook) piece).hasMoved = false;
+            }
+            if (piece instanceof King) {
+                ((King) piece).hasMoved = false;
             }
         }
     }

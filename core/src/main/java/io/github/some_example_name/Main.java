@@ -168,7 +168,7 @@ public class Main extends ApplicationAdapter {
             if (Gdx.input.justTouched()) {
                 float x = Gdx.input.getX();
                 float y = Gdx.graphics.getHeight() - Gdx.input.getY();
-                if (x > changeGame.getX() && x < changeGame.getX() + changeGame.getWidth() && y > changeGame.getY() && y < changeGame.getX() + changeGame.getHeight()) {
+                if (x > changeGame.getX() && x < changeGame.getX() + changeGame.getWidth() && y > changeGame.getY() && y < changeGame.getY() + changeGame.getHeight()) {
                     mode = 0;
                     isGameStarted = false;
                     pvpGame = null;
@@ -280,35 +280,25 @@ public class Main extends ApplicationAdapter {
 
                     if (y < times.getY() + times.getHeight() - boxHeight && y > times.getY() + times.getHeight() - (boxHeight * 2)) {
                         boxIndex = 1;
-                    }
-                    if (y < times.getY() + times.getHeight() - (boxHeight * 2) && y > times.getY() + times.getHeight() - (boxHeight * 3)) {
+                    } else if (y < times.getY() + times.getHeight() - (boxHeight * 2) && y > times.getY() + times.getHeight() - (boxHeight * 3)) {
                         boxIndex = 2;
-                    }
-                    if (y < times.getY() + times.getHeight() - (boxHeight * 3) && y > times.getY() + times.getHeight() - (boxHeight * 4)) {
+                    } else if (y < times.getY() + times.getHeight() - (boxHeight * 3) && y > times.getY() + times.getHeight() - (boxHeight * 4)) {
                         boxIndex = 3;
-                    }
-                    if (y < times.getY() + times.getHeight() - (boxHeight * 4) && y > times.getY() + times.getHeight() - (boxHeight * 5)) {
+                    } else if (y < times.getY() + times.getHeight() - (boxHeight * 4) && y > times.getY() + times.getHeight() - (boxHeight * 5)) {
                         boxIndex = 4;
-                    }
-                    if (y < times.getY() + times.getHeight() - (boxHeight * 5) && y > times.getY() + times.getHeight() - (boxHeight * 6)) {
+                    } else if (y < times.getY() + times.getHeight() - (boxHeight * 5) && y > times.getY() + times.getHeight() - (boxHeight * 6)) {
                         boxIndex = 5;
-                    }
-                    if (y < times.getY() + times.getHeight() - (boxHeight * 6) && y > times.getY() + times.getHeight() - (boxHeight * 7)) {
+                    } else if (y < times.getY() + times.getHeight() - (boxHeight * 6) && y > times.getY() + times.getHeight() - (boxHeight * 7)) {
                         boxIndex = 6;
-                    }
-                    if (y < times.getY() + times.getHeight() - (boxHeight * 7) && y > times.getY() + times.getHeight() - (boxHeight * 8)) {
+                    } else if (y < times.getY() + times.getHeight() - (boxHeight * 7) && y > times.getY() + times.getHeight() - (boxHeight * 8)) {
                         boxIndex = 7;
-                    }
-                    if (y < times.getY() + times.getHeight() - (boxHeight * 8) && y > times.getY() + times.getHeight() - (boxHeight * 9)) {
+                    } else if (y < times.getY() + times.getHeight() - (boxHeight * 8) && y > times.getY() + times.getHeight() - (boxHeight * 9)) {
                         boxIndex = 8;
-                    }
-                    if (y < times.getY() + times.getHeight() - (boxHeight * 9) && y > times.getY() + times.getHeight() - (boxHeight * 10)) {
+                    } else if (y < times.getY() + times.getHeight() - (boxHeight * 9) && y > times.getY() + times.getHeight() - (boxHeight * 10)) {
                         boxIndex = 9;
-                    }
-                    if (y < times.getY() + times.getHeight() - (boxHeight * 10) && y > times.getY() + times.getHeight() - (boxHeight * 11)) {
+                    } else if (y < times.getY() + times.getHeight() - (boxHeight * 10) && y > times.getY() + times.getHeight() - (boxHeight * 11)) {
                         boxIndex = 10;
-                    }
-                    if (y < times.getY() + times.getHeight() - (boxHeight * 11) && y > times.getY() + times.getHeight() - (boxHeight * 12)) {
+                    } else if (y < times.getY() + times.getHeight() - (boxHeight * 11) && y > times.getY() + times.getHeight() - (boxHeight * 12)) {
                         boxIndex = 11;
                     }
 
@@ -329,7 +319,7 @@ public class Main extends ApplicationAdapter {
                                 selectedTimeSeconds = 180;
                                 break;
                             case 4:
-                                selectedTimeSeconds = 300;
+                                selectedTimeSeconds = 300;  // 5 minutes
                                 break;
                             case 5:
                                 selectedTimeSeconds = 600;

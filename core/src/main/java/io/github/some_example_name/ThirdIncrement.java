@@ -7,11 +7,11 @@ public class ThirdIncrement {
 
     private Texture thirdIncrementTexture;
     public static float x = 0;
-    public static float y = 0f;
+    public static float y = 121.6156671f;
     public float width = 480f;
     public float height = 236.7686659f;
 
-    public ThirdIncrement(Texture changeGameTexture) {
+    public ThirdIncrement(Texture thirdIncrementTexture) {
         this.x = x;
         this.y = y;
         this.width = width;

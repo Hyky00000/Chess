@@ -7,7 +7,7 @@ public class FifthIncrement {
 
     private Texture fifthIncrementTexture;
     public static float x = 0;
-    public static float y = 0f;
+    public static float y = 130.1362398f;
     public float width = 480f;
     public float height = 219.7275204f;
 
