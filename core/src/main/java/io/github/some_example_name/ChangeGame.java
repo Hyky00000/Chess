@@ -7,9 +7,9 @@ public class ChangeGame {
 
     private Texture changeGameTexture;
     public static float x = 480;
-    public static float y = 422.1860885f;
+    public static float y = 410; //422.1860885f
     public float width = 160f;
-    public float height = 57.81391147f;
+    public float height = 70; //57.81391147f
 
     public ChangeGame(Texture changeGameTexture) {
         this.x = x;

@@ -77,6 +77,38 @@ public class Board {
         }
     }
 
+    public void ResetGame(){
+        float pieceOffsetX = boardX + borderOffsetX;
+        float pieceOffsetY = boardY + borderOffsetY;
+        float pieceMiddle = (squareSize - 56) / 2f;
+        float px = 0;
+        float py = 0;
+        for (int i = 0; i < 8; i++) {
+            pieces[i].setX(pieceOffsetX + i * squareSize + px);
+            pieces[i].setY(pieceOffsetY + 0 * squareSize + py);
+        }
+        for (int i = 0; i < 8; i++) {
+            pieces[8 + i].setX(pieceOffsetX + i * squareSize + px);
+            pieces[8 + i].setY(pieceOffsetY + 1 * squareSize + py);
+        }
+        for (int i = 16; i < 24; i++){
+            pieces[i].setX(pieceOffsetX + (i - 16) * squareSize + px);
+            pieces[i].setY(pieceOffsetY + 7 * squareSize + py);
+        }
+        for (int i = 0; i < 8; i++) {
+            pieces[24 + i].setX(pieceOffsetX + i * squareSize + px);
+            pieces[24 + i].setY(pieceOffsetY + 6 * squareSize + py);
+        }
+        for (int i = 0; i < capturedWhitePieces.length; i++){
+            if (capturedWhitePieces[i] != null){
+                capturedWhitePieces[i].setX(1000);
+            }
+            if(capturedBlackPieces[i] != null){
+                capturedBlackPieces[i].setX(1000);
+            }
+        }
+    }
+
     public Piece[] getPieces() {
         return pieces;
     }

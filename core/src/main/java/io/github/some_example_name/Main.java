@@ -175,6 +175,7 @@ public class Main extends ApplicationAdapter {
                     pvcGame = null;
                     networkGame = null;
                     resetGameState();
+                    board.ResetGame();
                 }
             }
         }
@@ -426,7 +427,7 @@ public class Main extends ApplicationAdapter {
                 if (x >= thirdIncrement.getX() && x <= thirdIncrement.getX() + thirdIncrement.getWidth() &&
                     y >= thirdIncrement.getY() && y <= thirdIncrement.getY() + thirdIncrement.getHeight()) {
 
-                    float thirdHeight = thirdIncrement.getHeight() / 3;
+                    float thirdHeight = thirdIncrement.getHeight() / 3f;
 
                     if (y > thirdIncrement.getY() + (2 * thirdHeight) && y < thirdIncrement.getY() + (3 * thirdHeight)) {
                         selectedIncrementType = 3;
@@ -438,7 +439,6 @@ public class Main extends ApplicationAdapter {
                         selectedIncrementType = 3;
                         selectedIncrementValue = 0;
                     }
-
                     startGameWithSelectedTime();
                 }
             }
@@ -855,12 +855,11 @@ public class Main extends ApplicationAdapter {
             }
 
             if (selectedTimeIndex == 10 && selectedTimeSeconds == Float.MAX_VALUE) {
-                font.draw(batch, "Black: ∞", 490, 280);
-                font.draw(batch, "White: ∞", 485, 225);
+                font.draw(batch, " ", 490, 280); //Used to be infinite
+                font.draw(batch, " ", 485, 225);
                 font.getData().setScale(2, 2);
                 font.setColor(Color.WHITE);
             } else {
-                // Draw the black player's clock time using your exact format
                 if (blackFTime > 3599) {
                     int hours = (int) (blackFTime / 3600);
                     int minutes = (int) ((blackFTime % 3600) / 60);
@@ -940,14 +939,13 @@ public class Main extends ApplicationAdapter {
                     }
                 }
 
-                // Draw the white player's clock time
                 if (whiteFTime > 3599) {
                     int hours = (int) (whiteFTime / 3600);
                     int minutes = (int) ((whiteFTime % 3600) / 60);
                     int seconds = (int) (whiteFTime % 60);
                     String minutesStr = (minutes < 10) ? "0" + Integer.toString(minutes) : Integer.toString(minutes);
                     String secondsStr = (seconds < 10) ? "0" + Integer.toString(seconds) : Integer.toString(seconds);
-                    font.draw(batch, Integer.toString(hours) + ":" + minutesStr + ":" + secondsStr, 485, 225);
+                    font.draw(batch, Integer.toString(hours) + ":" + minutesStr + ":" + secondsStr, 490, 225);
                 } else if (whiteFTime > 299) {
                     whiteBNumber = (int) (whiteFTime / 60);
                     String whiteSRoundedS = "00";
@@ -1172,3 +1170,4 @@ public class Main extends ApplicationAdapter {
 // 640 x 480
 // PC IPv4: 192.168.137.1
 // laptop IPv4: 192.168.0.68.
+// 5 minutes not working and make the captured pieces disappear
