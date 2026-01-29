@@ -3,20 +3,20 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 
-public class ChangeGame {
+public class Back {
 
-    private Texture changeGameTexture;
+    private Texture backTexture;
     public static float x = 480;
-    public static float y = 410;
+    public static float y = 370.765343f;
     public float width = 160f;
-    public float height = 70;
+    public float height = 35.23465704f;
 
-    public ChangeGame(Texture changeGameTexture) {
+    public Back(Texture backTexture) {
         this.x = x;
         this.y = y;
         this.width = width;
         this.height = height;
-        this.changeGameTexture = changeGameTexture;
+        this.backTexture = backTexture;
     }
 
     public float getWidth() {
@@ -35,12 +35,12 @@ public class ChangeGame {
         this.height = height;
     }
 
-    public Texture getChangeGameTexture() {
-        return changeGameTexture;
+    public Texture getBackTexture() {
+        return backTexture;
     }
 
-    public void setChangeGameTexture(Texture changeGameTexture) {
-        this.changeGameTexture = changeGameTexture;
+    public void setBackTexture(Texture backTexture) {
+        this.backTexture = backTexture;
     }
 
     public float getX() {
@@ -60,6 +60,6 @@ public class ChangeGame {
     }
 
     public void draw(SpriteBatch batch) {
-        batch.draw(changeGameTexture, x, y, width, height);
+        batch.draw(backTexture, x, y, width, height);
     }
 }

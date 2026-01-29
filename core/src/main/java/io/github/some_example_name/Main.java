@@ -27,6 +27,7 @@ public class Main extends ApplicationAdapter {
     private FourthIncrement fourthIncrement;
     private FifthIncrement fifthIncrement;
     private SixthIncrement sixthIncrement;
+    private Back back;
     private Times times;
     private NetworkMenu networkMenu;
     private Texture networkMenuTexture;
@@ -57,6 +58,7 @@ public class Main extends ApplicationAdapter {
     private Texture fourthIncrementTexture;
     private Texture fifthIncrementTexture;
     private Texture sixthIncrementTexture;
+    private Texture backTexture;
     private Texture timesTexture;
 
     private PlayerVsPlayer pvpGame;
@@ -69,13 +71,11 @@ public class Main extends ApplicationAdapter {
     private float promotionMenuX, promotionMenuY;
     private int previousMode = 0;
 
-    // Time control variables
     private float selectedTimeSeconds = 300;
     private int selectedTimeIndex = 4;
     private int selectedIncrementType = 0;
     private int selectedIncrementValue = 0;
 
-    // Move tracking for sixth increment
     private int moveCount = 0;
     private boolean sixthIncrementApplied = false;
 
@@ -97,8 +97,7 @@ public class Main extends ApplicationAdapter {
     private boolean networkWaitingForConnection = false;
     private float networkWaitTimer = 0;
 
-    // Track which game type we're setting up (PvP or PvAI)
-    private int gameTypeAfterTimeSelection = 0; // 0: PvP, 1: PvAI
+    private int gameTypeAfterTimeSelection = 0;
 
     @Override
     public void create() {
@@ -121,6 +120,7 @@ public class Main extends ApplicationAdapter {
         fifthIncrementTexture = new Texture("FifthIncrement.png");
         sixthIncrementTexture = new Texture("SixthIncrement.png");
         timesTexture = new Texture("Times.png");
+        backTexture = new Texture("Back.png");
 
         whitePawnTex = new Texture("WhitePawn.png");
         blackPawnTex = new Texture("BlackPawn.png");
@@ -151,6 +151,7 @@ public class Main extends ApplicationAdapter {
         fourthIncrement = new FourthIncrement(fourthIncrementTexture);
         fifthIncrement = new FifthIncrement(fifthIncrementTexture);
         sixthIncrement = new SixthIncrement(sixthIncrementTexture);
+        back = new Back(backTexture);
     }
 
     @Override
@@ -163,7 +164,8 @@ public class Main extends ApplicationAdapter {
         // 0 is start, 1 is choose colour, 2 is difficulty, 3 is vs ai, 4 is pvp, 5 is pawn promotion,
         // 6 is network menu, 7 is network game, 8 is times selection, 9-14 are increment selections
 
-        if (mode == 4 || mode == 7 || mode == 3) {
+        if (mode >= 1 && mode <= 16) {
+            back.draw(batch);
             changeGame.draw(batch);
             if (Gdx.input.justTouched()) {
                 float x = Gdx.input.getX();
@@ -176,6 +178,20 @@ public class Main extends ApplicationAdapter {
                     networkGame = null;
                     resetGameState();
                     board.ResetGame();
+                }
+                else if(x > back.getX() && x < back.getX() + back.getWidth() && y > back.getY() && y < back.getY() + back.getHeight()){
+                    if (mode == 1 || mode == 4 || mode == 8){
+                        mode = 0;
+                    }
+                    if (mode == 2){
+                        mode = 1;
+                    }
+                    else if (mode == 3){
+                        mode = 2;
+                    }
+                    else if (mode >= 9 && mode <= 14){
+                        mode = 8;
+                    }
                 }
             }
         }
@@ -206,21 +222,22 @@ public class Main extends ApplicationAdapter {
                 float y = Gdx.graphics.getHeight() - Gdx.input.getY();
                 if ((x > menu.getX()) && (x < menu.getX() + menu.getWidth()) &&
                     (y < menu.getY() + menu.getHeight()) && (y > menu.getY() + menu.getHeight() - menuChoiceHeight)) {
-                    gameTypeAfterTimeSelection = 0; // PvP
-                    mode = 8; // Go to time selection first
+                    gameTypeAfterTimeSelection = 0;
+                    mode = 8;
                     resetGameState();
                 } else if ((x > menu.getX()) && (x < menu.getX() + menu.getWidth()) &&
                     (y < menu.getY() + ((3 * menuChoiceHeight) + (2 * menuGapHeight))) &&
                     (y > menu.getY() + ((2 * menuChoiceHeight) + (2 * menuGapHeight)))) {
                     mode = 1;
                     resetGameState();
-                } else if ((x > menu.getX()) && (x < menu.getX() + menu.getWidth()) &&
+                } /*else if ((x > menu.getX()) && (x < menu.getX() + menu.getWidth()) &&
                     (y < menu.getY() + ((2 * menuChoiceHeight) + (1 * menuGapHeight))) &&
                     (y > menu.getY() + ((1 * menuChoiceHeight) + (1 * menuGapHeight)))) {
                     mode = 6;
                     networkMenu.reset();
                     resetGameState();
-                }
+                }*/
+                else if()
             }
         } else if (mode == 1) {
             board.draw(batch);
@@ -232,7 +249,7 @@ public class Main extends ApplicationAdapter {
                 if (x >= colourChoice.getX() && x <= colourChoice.getX() + colourChoice.getWidth() &&
                     y >= colourChoice.getY() && y <= colourChoice.getY() + colourChoice.getHeight()) {
                     float clickY = y - colourChoice.getY();
-                    playerIsWhite = clickY < colourChoice.getHeight() / 2;
+                    playerIsWhite = clickY < colourChoice.getHeight();
                     mode = 2;
                 }
             }
@@ -246,20 +263,20 @@ public class Main extends ApplicationAdapter {
                 if ((x > difficulty.getX()) && (x < difficulty.getX() + difficulty.getWidth()) &&
                     (y < difficulty.getY() + (difficultyChoiceHeight * 3)) && (y > difficulty.getY())) {
                     aiDifficulty = 3;
-                    gameTypeAfterTimeSelection = 1; // PvAI
-                    mode = 8; // Go to time selection
+                    gameTypeAfterTimeSelection = 1;
+                    mode = 8;
                     resetGameState();
                 } else if ((x > difficulty.getX()) && (x < difficulty.getX() + difficulty.getWidth()) &&
                     (y < difficulty.getY() + (difficultyChoiceHeight * 2)) && (y > difficulty.getY())) {
                     aiDifficulty = 2;
-                    gameTypeAfterTimeSelection = 1; // PvAI
-                    mode = 8; // Go to time selection
+                    gameTypeAfterTimeSelection = 1;
+                    mode = 8;
                     resetGameState();
                 } else if ((x > difficulty.getX()) && (x < difficulty.getX() + difficulty.getWidth()) &&
                     (y < difficulty.getY() + (difficultyChoiceHeight * 1)) && (y > difficulty.getY())) {
                     aiDifficulty = 1;
-                    gameTypeAfterTimeSelection = 1; // PvAI
-                    mode = 8; // Go to time selection
+                    gameTypeAfterTimeSelection = 1;
+                    mode = 8;
                     resetGameState();
                 }
             }
@@ -319,7 +336,7 @@ public class Main extends ApplicationAdapter {
                                 selectedTimeSeconds = 180;
                                 break;
                             case 4:
-                                selectedTimeSeconds = 300;  // 5 minutes
+                                selectedTimeSeconds = 300;
                                 break;
                             case 5:
                                 selectedTimeSeconds = 600;
@@ -459,16 +476,12 @@ public class Main extends ApplicationAdapter {
             board.draw(batch);
             board.drawCapturedPieces(batch);
             fifthIncrement.draw(batch);
-
             if (Gdx.input.justTouched()) {
                 float x = Gdx.input.getX();
                 float y = Gdx.graphics.getHeight() - Gdx.input.getY();
-
                 if (x >= fifthIncrement.getX() && x <= fifthIncrement.getX() + fifthIncrement.getWidth() &&
                     y >= fifthIncrement.getY() && y <= fifthIncrement.getY() + fifthIncrement.getHeight()) {
-
                     float thirdHeight = fifthIncrement.getHeight() / 3;
-
                     if (y > fifthIncrement.getY() + (2 * thirdHeight) && y < fifthIncrement.getY() + (3 * thirdHeight)) {
                         selectedIncrementType = 5;
                         selectedIncrementValue = 10;
@@ -479,7 +492,6 @@ public class Main extends ApplicationAdapter {
                         selectedIncrementType = 5;
                         selectedIncrementValue = 0;
                     }
-
                     startGameWithSelectedTime();
                 }
             }
@@ -487,31 +499,25 @@ public class Main extends ApplicationAdapter {
             board.draw(batch);
             board.drawCapturedPieces(batch);
             sixthIncrement.draw(batch);
-
             if (Gdx.input.justTouched()) {
                 float x = Gdx.input.getX();
                 float y = Gdx.graphics.getHeight() - Gdx.input.getY();
                 float fifthHeight = sixthIncrement.getHeight() / 5f;
                 if (x >= sixthIncrement.getX() && x <= sixthIncrement.getX() + sixthIncrement.getWidth() &&
                     y >= sixthIncrement.getY() && y <= sixthIncrement.getY() + sixthIncrement.getHeight() - fifthHeight) {
-
                     if (y > sixthIncrement.getY() + (fifthHeight * 3) && y < sixthIncrement.getY() + (4 * fifthHeight)) {
-                        //no increment
                         selectedIncrementType = 6;
                         selectedIncrementValue = 0;
                         System.out.println("1");
                     } else if (y > sixthIncrement.getY() + (2 * fifthHeight) && y < sixthIncrement.getY() + (3 * fifthHeight)) {
-                        // 30 seconds
                         selectedIncrementType = 6;
                         selectedIncrementValue = 1;
                         System.out.println("2");
                     } else if (y > sixthIncrement.getY() + (1 * fifthHeight) && y < sixthIncrement.getY() + (2 * fifthHeight)) {
-                        // add 30mins to clock after 40 moves
                         selectedIncrementType = 6;
                         selectedIncrementValue = 2;
                         System.out.println("3");
                     } else if (y > sixthIncrement.getY() && y < sixthIncrement.getY() + fifthHeight) {
-                        //add 30 minutes and start 30second increment after 40 moves
                         selectedIncrementType = 6;
                         selectedIncrementValue = 3;
                         System.out.println("4");
@@ -544,13 +550,13 @@ public class Main extends ApplicationAdapter {
                         if (currentWhiteTurn) {
                             blackClockRunning = false;
                             whiteClockRunning = true;
-                            applyIncrement(false); // Black just moved
+                            applyIncrement(false);
                             moveCount++;
 
                         } else {
                             whiteClockRunning = false;
                             blackClockRunning = true;
-                            applyIncrement(true); // White just moved
+                            applyIncrement(true);
                             moveCount++;
                         }
                         lastWhiteTurn = currentWhiteTurn;
@@ -566,12 +572,12 @@ public class Main extends ApplicationAdapter {
                         if (currentWhiteTurn) {
                             blackClockRunning = false;
                             whiteClockRunning = true;
-                            applyIncrement(false); // Black just moved
+                            applyIncrement(false);
                             moveCount++;
                         } else {
                             whiteClockRunning = false;
                             blackClockRunning = true;
-                            applyIncrement(true); // White just moved
+                            applyIncrement(true);
                             moveCount++;
                         }
                         lastWhiteTurn = currentWhiteTurn;
@@ -605,12 +611,12 @@ public class Main extends ApplicationAdapter {
                         if (currentWhiteTurn) {
                             blackClockRunning = false;
                             whiteClockRunning = true;
-                            applyIncrement(false); // Black just moved
+                            applyIncrement(false);
                             moveCount++;
                         } else {
                             whiteClockRunning = false;
                             blackClockRunning = true;
-                            applyIncrement(true); // White just moved
+                            applyIncrement(true);
                             moveCount++;
                         }
                         lastWhiteTurn = currentWhiteTurn;
@@ -712,7 +718,7 @@ public class Main extends ApplicationAdapter {
                     board.promotingPawn = null;
                 }
             }
-        } else if (mode == 6) {
+        } /*else if (mode == 6) {
             board.draw(batch);
             board.drawCapturedPieces(batch);
             networkMenu.draw(batch);
@@ -805,7 +811,7 @@ public class Main extends ApplicationAdapter {
                     networkGame.draw(batch);
                 }
             }
-        }
+        } */
 
         float deltaTime = Gdx.graphics.getDeltaTime();
         boolean gameOver = board.gameOver;
@@ -860,7 +866,7 @@ public class Main extends ApplicationAdapter {
                 } else if (blackFTime > 299) {
                     blackBNumber = (int) (blackFTime / 60);
                     String blackSRoundedS = "00";
-                    font.draw(batch, "Black: " + Integer.toString(blackBNumber) + ":" + blackSRoundedS, 490, 280);
+                    font.draw(batch,Integer.toString(blackBNumber) + ":" + blackSRoundedS, 490, 280);
                 } else if (blackFTime <= 299 && blackFTime > 240) {
                     blackBNumber = 4;
                     blackSNumber = ((blackFTime / 60) - blackBNumber) * 60;
@@ -939,7 +945,7 @@ public class Main extends ApplicationAdapter {
                 } else if (whiteFTime > 299) {
                     whiteBNumber = (int) (whiteFTime / 60);
                     String whiteSRoundedS = "00";
-                    font.draw(batch, "White: " + Integer.toString(whiteBNumber) + ":" + whiteSRoundedS, 485, 225);
+                    font.draw(batch,Integer.toString(whiteBNumber) + ":" + whiteSRoundedS, 485, 225);
                 } else if (whiteFTime <= 299 && whiteFTime > 240) {
                     whiteBNumber = 4;
                     whiteSNumber = ((whiteFTime / 60) - whiteBNumber) * 60;
@@ -1034,10 +1040,10 @@ public class Main extends ApplicationAdapter {
             }
             else if (selectedIncrementValue == 2) {
                 if (!sixthIncrementApplied) {
-                    if (isWhite && moveCount == 79) {
+                    if (isWhite && moveCount == 77) {
                         whiteFTime += 1800;
                         sixthIncrementApplied = true;
-                    } else if (!isWhite && moveCount == 80) {
+                    } else if (!isWhite && moveCount == 78) {
                         blackFTime += 1800;
                         sixthIncrementApplied = true;
                     }
@@ -1094,7 +1100,7 @@ public class Main extends ApplicationAdapter {
         isGameStarted = false;
     }
 
-    private void startNetworkGameAsHost() {
+    /*private void startNetworkGameAsHost() {
         String playerName = networkMenu.getPlayerName();
         if (playerName.isEmpty()) {
             playerName = "HostPlayer";
@@ -1130,7 +1136,7 @@ public class Main extends ApplicationAdapter {
             mode = 6;
             networkGame = null;
         }
-    }
+    }*/
 
     @Override
     public void dispose() {
@@ -1160,5 +1166,3 @@ public class Main extends ApplicationAdapter {
 // 640 x 480
 // PC IPv4: 192.168.137.1
 // laptop IPv4: 192.168.0.68.
-// 5 minutes not working and make the captured pieces disappear
-//hg
