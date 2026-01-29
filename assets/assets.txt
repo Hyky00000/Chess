@@ -1,3 +1,4 @@
+Back.png
 BlackBishop.png
 BlackKing.png
 BlackKnight.png
