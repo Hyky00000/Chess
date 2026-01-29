@@ -63,6 +63,7 @@ public class Main extends ApplicationAdapter {
 
     private PlayerVsPlayer pvpGame;
     private PlayerVsComputer pvcGame;
+    private Practice practice;
     int aiDifficulty;
     boolean playerIsWhite;
 
@@ -159,7 +160,6 @@ public class Main extends ApplicationAdapter {
         ScreenUtils.clear(0.15f, 0.15f, 0.2f, 1);
         batch.begin();
 
-        System.out.println(moveCount);
 
         // 0 is start, 1 is choose colour, 2 is difficulty, 3 is vs ai, 4 is pvp, 5 is pawn promotion,
         // 6 is network menu, 7 is network game, 8 is times selection, 9-14 are increment selections
@@ -236,8 +236,13 @@ public class Main extends ApplicationAdapter {
                     mode = 6;
                     networkMenu.reset();
                     resetGameState();
-                }*/
-                else if()
+                }*/ else if ((x > menu.getX()) && (x < menu.getX() + menu.getWidth()) &&
+                    (y < menu.getY() + (1 * menuChoiceHeight)) &&
+                    (y > menu.getY())) {
+
+                    mode = 2;
+                    resetGameState();
+                }
             }
         } else if (mode == 1) {
             board.draw(batch);
@@ -260,27 +265,69 @@ public class Main extends ApplicationAdapter {
             if (Gdx.input.justTouched()) {
                 float x = Gdx.input.getX();
                 float y = Gdx.graphics.getHeight() - Gdx.input.getY();
+
+                float boxHeight = difficultyChoiceHeight;
+
                 if ((x > difficulty.getX()) && (x < difficulty.getX() + difficulty.getWidth()) &&
-                    (y < difficulty.getY() + (difficultyChoiceHeight * 3)) && (y > difficulty.getY())) {
-                    aiDifficulty = 3;
-                    gameTypeAfterTimeSelection = 1;
-                    mode = 8;
-                    resetGameState();
+                    (y < difficulty.getY() + (3 * boxHeight)) && (y > difficulty.getY() + (2 * boxHeight))) {
+                    if (gameTypeAfterTimeSelection == 1) {
+                        aiDifficulty = 3;
+                        gameTypeAfterTimeSelection = 1;
+                        mode = 8;
+                        resetGameState();
+                    } else {
+                        practice = new Practice(board, 3,
+                            whiteKingTex, whiteQueenTex, whiteRookTex, whiteKnightTex, whiteBishopTex, whitePawnTex,
+                            blackKingTex, blackQueenTex, blackRookTex, blackKnightTex, blackBishopTex, blackPawnTex);
+                        mode = 16;
+                    }
                 } else if ((x > difficulty.getX()) && (x < difficulty.getX() + difficulty.getWidth()) &&
-                    (y < difficulty.getY() + (difficultyChoiceHeight * 2)) && (y > difficulty.getY())) {
-                    aiDifficulty = 2;
-                    gameTypeAfterTimeSelection = 1;
-                    mode = 8;
-                    resetGameState();
+                    (y < difficulty.getY() + (2 * boxHeight)) && (y > difficulty.getY() + (1 * boxHeight))) {
+                    if (gameTypeAfterTimeSelection == 1) {
+                        aiDifficulty = 2;
+                        gameTypeAfterTimeSelection = 1;
+                        mode = 8;
+                        resetGameState();
+                    } else {
+                        practice = new Practice(board, 2,
+                            whiteKingTex, whiteQueenTex, whiteRookTex, whiteKnightTex, whiteBishopTex, whitePawnTex,
+                            blackKingTex, blackQueenTex, blackRookTex, blackKnightTex, blackBishopTex, blackPawnTex);
+                        mode = 16;
+                    }
                 } else if ((x > difficulty.getX()) && (x < difficulty.getX() + difficulty.getWidth()) &&
-                    (y < difficulty.getY() + (difficultyChoiceHeight * 1)) && (y > difficulty.getY())) {
-                    aiDifficulty = 1;
-                    gameTypeAfterTimeSelection = 1;
-                    mode = 8;
-                    resetGameState();
+                    (y < difficulty.getY() + (1 * boxHeight)) && (y > difficulty.getY())) {
+                    if (gameTypeAfterTimeSelection == 1) {
+                        aiDifficulty = 1;
+                        gameTypeAfterTimeSelection = 1;
+                        mode = 8;
+                        resetGameState();
+                    } else {
+                        practice = new Practice(board, 1,
+                            whiteKingTex, whiteQueenTex, whiteRookTex, whiteKnightTex, whiteBishopTex, whitePawnTex,
+                            blackKingTex, blackQueenTex, blackRookTex, blackKnightTex, blackBishopTex, blackPawnTex);
+                        mode = 16;
+                    }
                 }
             }
-        } else if (mode == 8) {
+        }
+        else if (mode == 16) {
+            if (practice == null) {
+                mode = 2;
+            } else {
+                if (Gdx.input.justTouched()) {
+                    float x = Gdx.input.getX();
+                    float y = Gdx.graphics.getHeight() - Gdx.input.getY();
+                    System.out.println(x);
+                    if (practice.isMoveMade()) {
+                        practice.reset();
+                    } else {
+                        practice.click(x, y);
+                    }
+                }
+                practice.draw(batch);
+            }
+        }
+        else if (mode == 8) {
             board.draw(batch);
             board.drawCapturedPieces(batch);
             times.draw(batch);
