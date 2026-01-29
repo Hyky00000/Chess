@@ -7,7 +7,7 @@ public class NetworkMenu {
 
     private Texture networkMenuTexture;
     public static float x = 0;
-    public static float y = 118.86f;
+    public static float y = 138.55f;
     public float width = 480f;
     public float height = 202.9f;
 

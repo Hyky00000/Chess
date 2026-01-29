@@ -69,8 +69,8 @@ public class Main extends ApplicationAdapter {
 
     private Piece promotingPawn = null;
     private boolean isWhitePromotion = false;
-    private float promotionMenuX, promotionMenuY;
     private int previousMode = 0;
+    private int aiOrPractice = -1;
 
     private float selectedTimeSeconds = 300;
     private int selectedTimeIndex = 4;
@@ -94,7 +94,6 @@ public class Main extends ApplicationAdapter {
 
     private boolean lastWhiteTurn = true;
     private boolean isGameStarted = false;
-
     private boolean networkWaitingForConnection = false;
     private float networkWaitTimer = 0;
 
@@ -162,7 +161,7 @@ public class Main extends ApplicationAdapter {
 
 
         // 0 is start, 1 is choose colour, 2 is difficulty, 3 is vs ai, 4 is pvp, 5 is pawn promotion,
-        // 6 is network menu, 7 is network game, 8 is times selection, 9-14 are increment selections
+        // 6 is network menu, 7 is network game, 8 is times selection, 9-14 are increment selections, 15 is practice
 
         if (mode >= 1 && mode <= 16) {
             back.draw(batch);
@@ -180,24 +179,52 @@ public class Main extends ApplicationAdapter {
                     board.ResetGame();
                 }
                 else if(x > back.getX() && x < back.getX() + back.getWidth() && y > back.getY() && y < back.getY() + back.getHeight()){
-                    if (mode == 1 || mode == 4 || mode == 8){
+                    if (mode == 1 || mode == 8){
                         mode = 0;
                     }
                     if (mode == 2){
-                        mode = 1;
+                        if (aiOrPractice == 1){
+                            mode = 0;
+                        }
+                        else if (aiOrPractice == 0) {
+                            mode = 1;
+                        }
                     }
                     else if (mode == 3){
+                        isGameStarted = false;
+                        pvpGame = null;
+                        pvcGame = null;
+                        networkGame = null;
+                        resetGameState();
+                        board.ResetGame();
                         mode = 2;
+                    }
+                    else if (mode == 4){
+                        isGameStarted = false;
+                        pvpGame = null;
+                        pvcGame = null;
+                        networkGame = null;
+                        resetGameState();
+                        board.ResetGame();
+                        mode = previousMode;
                     }
                     else if (mode >= 9 && mode <= 14){
                         mode = 8;
+                    }
+                    else if (mode == 15){
+                        isGameStarted = false;
+                        pvpGame = null;
+                        pvcGame = null;
+                        networkGame = null;
+                        resetGameState();
+                        board.ResetGame();
+                        mode = 2;
                     }
                 }
             }
         }
 
         if (mode == 3) {
-            changeAI.draw(batch);
             if (Gdx.input.justTouched()) {
                 float x = Gdx.input.getX();
                 float y = Gdx.graphics.getHeight() - Gdx.input.getY();
@@ -229,17 +256,19 @@ public class Main extends ApplicationAdapter {
                     (y < menu.getY() + ((3 * menuChoiceHeight) + (2 * menuGapHeight))) &&
                     (y > menu.getY() + ((2 * menuChoiceHeight) + (2 * menuGapHeight)))) {
                     mode = 1;
+                    aiOrPractice = 0;
                     resetGameState();
-                } /*else if ((x > menu.getX()) && (x < menu.getX() + menu.getWidth()) &&
+                } else if ((x > menu.getX()) && (x < menu.getX() + menu.getWidth()) &&
                     (y < menu.getY() + ((2 * menuChoiceHeight) + (1 * menuGapHeight))) &&
                     (y > menu.getY() + ((1 * menuChoiceHeight) + (1 * menuGapHeight)))) {
                     mode = 6;
                     networkMenu.reset();
                     resetGameState();
-                }*/ else if ((x > menu.getX()) && (x < menu.getX() + menu.getWidth()) &&
+                } else if ((x > menu.getX()) && (x < menu.getX() + menu.getWidth()) &&
                     (y < menu.getY() + (1 * menuChoiceHeight)) &&
                     (y > menu.getY())) {
-
+                    aiOrPractice = 1;
+                    previousMode = 15;
                     mode = 2;
                     resetGameState();
                 }
@@ -255,6 +284,7 @@ public class Main extends ApplicationAdapter {
                     y >= colourChoice.getY() && y <= colourChoice.getY() + colourChoice.getHeight()) {
                     float clickY = y - colourChoice.getY();
                     playerIsWhite = clickY < colourChoice.getHeight();
+                    previousMode = 1;
                     mode = 2;
                 }
             }
@@ -270,47 +300,53 @@ public class Main extends ApplicationAdapter {
 
                 if ((x > difficulty.getX()) && (x < difficulty.getX() + difficulty.getWidth()) &&
                     (y < difficulty.getY() + (3 * boxHeight)) && (y > difficulty.getY() + (2 * boxHeight))) {
-                    if (gameTypeAfterTimeSelection == 1) {
+                    if (aiOrPractice == 0) {
                         aiDifficulty = 3;
                         gameTypeAfterTimeSelection = 1;
+                        previousMode = 2;
                         mode = 8;
                         resetGameState();
                     } else {
                         practice = new Practice(board, 3,
                             whiteKingTex, whiteQueenTex, whiteRookTex, whiteKnightTex, whiteBishopTex, whitePawnTex,
                             blackKingTex, blackQueenTex, blackRookTex, blackKnightTex, blackBishopTex, blackPawnTex);
-                        mode = 16;
+                        previousMode = 2;
+                        mode = 15;
                     }
                 } else if ((x > difficulty.getX()) && (x < difficulty.getX() + difficulty.getWidth()) &&
                     (y < difficulty.getY() + (2 * boxHeight)) && (y > difficulty.getY() + (1 * boxHeight))) {
-                    if (gameTypeAfterTimeSelection == 1) {
+                    if (aiOrPractice == 0) {
                         aiDifficulty = 2;
                         gameTypeAfterTimeSelection = 1;
+                        previousMode = 2;
                         mode = 8;
                         resetGameState();
                     } else {
                         practice = new Practice(board, 2,
                             whiteKingTex, whiteQueenTex, whiteRookTex, whiteKnightTex, whiteBishopTex, whitePawnTex,
                             blackKingTex, blackQueenTex, blackRookTex, blackKnightTex, blackBishopTex, blackPawnTex);
-                        mode = 16;
+                        previousMode = 2;
+                        mode = 15;
                     }
                 } else if ((x > difficulty.getX()) && (x < difficulty.getX() + difficulty.getWidth()) &&
                     (y < difficulty.getY() + (1 * boxHeight)) && (y > difficulty.getY())) {
-                    if (gameTypeAfterTimeSelection == 1) {
+                    if (aiOrPractice == 0) {
                         aiDifficulty = 1;
                         gameTypeAfterTimeSelection = 1;
+                        previousMode = 2;
                         mode = 8;
                         resetGameState();
                     } else {
                         practice = new Practice(board, 1,
                             whiteKingTex, whiteQueenTex, whiteRookTex, whiteKnightTex, whiteBishopTex, whitePawnTex,
                             blackKingTex, blackQueenTex, blackRookTex, blackKnightTex, blackBishopTex, blackPawnTex);
-                        mode = 16;
+                        previousMode = 2;
+                        mode = 15;
                     }
                 }
             }
         }
-        else if (mode == 16) {
+        else if (mode == 15) {
             if (practice == null) {
                 mode = 2;
             } else {
@@ -407,16 +443,22 @@ public class Main extends ApplicationAdapter {
 
                         if (selectedTimeIndex >= 0 && selectedTimeIndex <= 2) {
                             mode = 9;
+                            previousMode = 9;
                         } else if (selectedTimeIndex == 3) {
                             mode = 10;
+                            previousMode = 10;
                         } else if (selectedTimeIndex == 4) {
                             mode = 11;
+                            previousMode = 11;
                         } else if (selectedTimeIndex == 5) {
                             mode = 12;
+                            previousMode = 12;
                         } else if (selectedTimeIndex == 6 || selectedTimeIndex == 7) {
                             mode = 13;
+                            previousMode = 13;
                         } else if (selectedTimeIndex >= 8 && selectedTimeIndex <= 9) {
                             mode = 14;
+                            previousMode = 14;
                         } else if (selectedTimeIndex == 10) {
                             startGameWithSelectedTime();
                         }
@@ -765,7 +807,7 @@ public class Main extends ApplicationAdapter {
                     board.promotingPawn = null;
                 }
             }
-        } /*else if (mode == 6) {
+        } else if (mode == 6) {
             board.draw(batch);
             board.drawCapturedPieces(batch);
             networkMenu.draw(batch);
@@ -858,7 +900,7 @@ public class Main extends ApplicationAdapter {
                     networkGame.draw(batch);
                 }
             }
-        } */
+        }
 
         float deltaTime = Gdx.graphics.getDeltaTime();
         boolean gameOver = board.gameOver;
@@ -1147,7 +1189,7 @@ public class Main extends ApplicationAdapter {
         isGameStarted = false;
     }
 
-    /*private void startNetworkGameAsHost() {
+    private void startNetworkGameAsHost() {
         String playerName = networkMenu.getPlayerName();
         if (playerName.isEmpty()) {
             playerName = "HostPlayer";
@@ -1183,7 +1225,7 @@ public class Main extends ApplicationAdapter {
             mode = 6;
             networkGame = null;
         }
-    }*/
+    }
 
     @Override
     public void dispose() {
@@ -1213,3 +1255,5 @@ public class Main extends ApplicationAdapter {
 // 640 x 480
 // PC IPv4: 192.168.137.1
 // laptop IPv4: 192.168.0.68.
+// fix the ai
+// dont forget about change AI photo png
