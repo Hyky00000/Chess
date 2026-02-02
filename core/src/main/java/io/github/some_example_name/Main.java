@@ -199,7 +199,7 @@ public class Main extends ApplicationAdapter {
                         resetGameState();
                         practice = null;
                         board.ResetGame();
-                        mode = 2;
+                        mode = 8;
                     }
                     else if (mode == 4){
                         isGameStarted = false;
@@ -304,13 +304,13 @@ public class Main extends ApplicationAdapter {
                 if ((x > difficulty.getX()) && (x < difficulty.getX() + difficulty.getWidth()) &&
                     (y < difficulty.getY() + (3 * boxHeight)) && (y > difficulty.getY() + (2 * boxHeight))) {
                     if (aiOrPractice == 0) {
-                        aiDifficulty = 3;
+                        aiDifficulty = 1;
                         gameTypeAfterTimeSelection = 1;
                         previousMode = 2;
                         mode = 8;
                         resetGameState();
                     } else {
-                        practice = new Practice(board, 3,
+                        practice = new Practice(board, 1,
                             whiteKingTex, whiteQueenTex, whiteRookTex, whiteKnightTex, whiteBishopTex, whitePawnTex,
                             blackKingTex, blackQueenTex, blackRookTex, blackKnightTex, blackBishopTex, blackPawnTex);
                         previousMode = 2;
@@ -334,13 +334,13 @@ public class Main extends ApplicationAdapter {
                 } else if ((x > difficulty.getX()) && (x < difficulty.getX() + difficulty.getWidth()) &&
                     (y < difficulty.getY() + (1 * boxHeight)) && (y > difficulty.getY())) {
                     if (aiOrPractice == 0) {
-                        aiDifficulty = 1;
+                        aiDifficulty = 3;
                         gameTypeAfterTimeSelection = 1;
                         previousMode = 2;
                         mode = 8;
                         resetGameState();
                     } else {
-                        practice = new Practice(board, 1,
+                        practice = new Practice(board, 3,
                             whiteKingTex, whiteQueenTex, whiteRookTex, whiteKnightTex, whiteBishopTex, whitePawnTex,
                             blackKingTex, blackQueenTex, blackRookTex, blackKnightTex, blackBishopTex, blackPawnTex);
                         previousMode = 2;
