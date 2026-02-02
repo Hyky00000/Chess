@@ -175,6 +175,7 @@ public class Main extends ApplicationAdapter {
                     pvpGame = null;
                     pvcGame = null;
                     networkGame = null;
+                    practice = null;
                     resetGameState();
                     board.ResetGame();
                 }
@@ -196,6 +197,7 @@ public class Main extends ApplicationAdapter {
                         pvcGame = null;
                         networkGame = null;
                         resetGameState();
+                        practice = null;
                         board.ResetGame();
                         mode = 2;
                     }
@@ -204,6 +206,7 @@ public class Main extends ApplicationAdapter {
                         pvpGame = null;
                         pvcGame = null;
                         networkGame = null;
+                        practice = null;
                         resetGameState();
                         board.ResetGame();
                         mode = previousMode;
@@ -217,6 +220,7 @@ public class Main extends ApplicationAdapter {
                         pvcGame = null;
                         networkGame = null;
                         resetGameState();
+                        practice = null;
                         board.ResetGame();
                         mode = 2;
                     }
@@ -350,6 +354,7 @@ public class Main extends ApplicationAdapter {
             if (practice == null) {
                 mode = 2;
             } else {
+
                 if (Gdx.input.justTouched()) {
                     float x = Gdx.input.getX();
                     float y = Gdx.graphics.getHeight() - Gdx.input.getY();
