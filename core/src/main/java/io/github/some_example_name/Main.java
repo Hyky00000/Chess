@@ -27,6 +27,7 @@ public class Main extends ApplicationAdapter {
     private FourthIncrement fourthIncrement;
     private FifthIncrement fifthIncrement;
     private SixthIncrement sixthIncrement;
+    private NextPuzzle nextPuzzle;
     private Back back;
     private Times times;
     private NetworkMenu networkMenu;
@@ -58,6 +59,7 @@ public class Main extends ApplicationAdapter {
     private Texture fourthIncrementTexture;
     private Texture fifthIncrementTexture;
     private Texture sixthIncrementTexture;
+    private Texture nextPuzzleTexture;
     private Texture backTexture;
     private Texture timesTexture;
 
@@ -119,6 +121,7 @@ public class Main extends ApplicationAdapter {
         fourthIncrementTexture = new Texture("FourthIncrement.png");
         fifthIncrementTexture = new Texture("FifthIncrement.png");
         sixthIncrementTexture = new Texture("SixthIncrement.png");
+        nextPuzzleTexture = new Texture("NextPuzzle.png");
         timesTexture = new Texture("Times.png");
         backTexture = new Texture("Back.png");
 
@@ -151,6 +154,7 @@ public class Main extends ApplicationAdapter {
         fourthIncrement = new FourthIncrement(fourthIncrementTexture);
         fifthIncrement = new FifthIncrement(fifthIncrementTexture);
         sixthIncrement = new SixthIncrement(sixthIncrementTexture);
+        nextPuzzle = new NextPuzzle(nextPuzzleTexture);
         back = new Back(backTexture);
     }
 
@@ -158,7 +162,6 @@ public class Main extends ApplicationAdapter {
     public void render() {
         ScreenUtils.clear(0.15f, 0.15f, 0.2f, 1);
         batch.begin();
-
 
         // 0 is start, 1 is choose colour, 2 is difficulty, 3 is vs ai, 4 is pvp, 5 is pawn promotion,
         // 6 is network menu, 7 is network game, 8 is times selection, 9-14 are increment selections, 15 is practice
@@ -247,6 +250,7 @@ public class Main extends ApplicationAdapter {
             board.draw(batch);
             board.drawCapturedPieces(batch);
             menu.draw(batch);
+            nextPuzzle.draw(batch);
             if (Gdx.input.justTouched()) {
                 float x = Gdx.input.getX();
                 float y = Gdx.graphics.getHeight() - Gdx.input.getY();
@@ -530,13 +534,13 @@ public class Main extends ApplicationAdapter {
 
                     if (y > thirdIncrement.getY() + (2 * thirdHeight) && y < thirdIncrement.getY() + (3 * thirdHeight)) {
                         selectedIncrementType = 3;
-                        selectedIncrementValue = 3;
+                        selectedIncrementValue = 0;
                     } else if (y > thirdIncrement.getY() + thirdHeight && y < thirdIncrement.getY() + (2 * thirdHeight)) {
                         selectedIncrementType = 3;
                         selectedIncrementValue = 2;
                     } else {
                         selectedIncrementType = 3;
-                        selectedIncrementValue = 0;
+                        selectedIncrementValue = 3;
                     }
                     startGameWithSelectedTime();
                 }
@@ -555,12 +559,11 @@ public class Main extends ApplicationAdapter {
 
                     if (y > fourthIncrement.getY() + (fourthIncrement.getHeight() / 2) && y < fourthIncrement.getY() + fourthIncrement.getHeight()) {
                         selectedIncrementType = 4;
-                        selectedIncrementValue = 300;
+                        selectedIncrementValue = 0;
                     } else {
                         selectedIncrementType = 4;
-                        selectedIncrementValue = 0;
+                        selectedIncrementValue = 5;
                     }
-
                     startGameWithSelectedTime();
                 }
             }
@@ -576,13 +579,13 @@ public class Main extends ApplicationAdapter {
                     float thirdHeight = fifthIncrement.getHeight() / 3;
                     if (y > fifthIncrement.getY() + (2 * thirdHeight) && y < fifthIncrement.getY() + (3 * thirdHeight)) {
                         selectedIncrementType = 5;
-                        selectedIncrementValue = 10;
+                        selectedIncrementValue = 0;
                     } else if (y > fifthIncrement.getY() + thirdHeight && y < fifthIncrement.getY() + (2 * thirdHeight)) {
                         selectedIncrementType = 5;
                         selectedIncrementValue = 5;
                     } else {
                         selectedIncrementType = 5;
-                        selectedIncrementValue = 0;
+                        selectedIncrementValue = 10;
                     }
                     startGameWithSelectedTime();
                 }
@@ -943,7 +946,7 @@ public class Main extends ApplicationAdapter {
             }
 
             if (selectedTimeIndex == 10 && selectedTimeSeconds == Float.MAX_VALUE) {
-                font.draw(batch, " ", 490, 280); //Used to be infinite
+                font.draw(batch, " ", 490, 280);
                 font.draw(batch, " ", 485, 225);
                 font.getData().setScale(2, 2);
                 font.setColor(Color.WHITE);
@@ -955,18 +958,28 @@ public class Main extends ApplicationAdapter {
                     String minutesStr = (minutes < 10) ? "0" + Integer.toString(minutes) : Integer.toString(minutes);
                     String secondsStr = (seconds < 10) ? "0" + Integer.toString(seconds) : Integer.toString(seconds);
                     font.draw(batch, Integer.toString(hours) + ":" + minutesStr + ":" + secondsStr, 490, 280);
-                } else if (blackFTime > 299) {
+                } else if (blackFTime > 299 && blackFTime <= 3599) {
                     blackBNumber = (int) (blackFTime / 60);
-                    String blackSRoundedS = "00";
-                    font.draw(batch,Integer.toString(blackBNumber) + ":" + blackSRoundedS, 490, 280);
+                    blackSNumber = ((blackFTime / 60) - blackBNumber) * 60;
+                    blackSRounded = (int) Math.ceil(blackSNumber);
+                    if (blackSRounded >= 1 && blackSRounded <= 9) {
+                        System.out.println(blackBNumber + blackSRounded);
+                        String blackSRoundedS = "0" + Integer.toString(blackSRounded);
+                        font.draw(batch,Integer.toString(blackBNumber) + ":" + blackSRoundedS, 490, 280);
+                        System.out.println(blackBNumber + blackSRounded);
+                    } else {
+                        font.draw(batch,Integer.toString(blackBNumber) + ":" + Integer.toString(blackSRounded), 490, 280);
+                    }
                 } else if (blackFTime <= 299 && blackFTime > 240) {
                     blackBNumber = 4;
                     blackSNumber = ((blackFTime / 60) - blackBNumber) * 60;
                     blackSRounded = (int) Math.ceil(blackSNumber);
                     if (blackSRounded >= 1 && blackSRounded <= 9) {
+                        System.out.println(blackBNumber + blackSRounded);
                         String blackSRoundedS = "0" + Integer.toString(blackSRounded);
                         font.draw(batch, "Black: " + Integer.toString(blackBNumber) + ":" + blackSRoundedS, 490, 280);
                     } else {
+                        System.out.println(blackBNumber + blackSRounded);
                         font.draw(batch, "Black: " + Integer.toString(blackBNumber) + ":" + Integer.toString(blackSRounded), 490, 280);
                     }
                 } else if (blackFTime > 239 && blackFTime <= 240) {
@@ -1034,10 +1047,18 @@ public class Main extends ApplicationAdapter {
                     String minutesStr = (minutes < 10) ? "0" + Integer.toString(minutes) : Integer.toString(minutes);
                     String secondsStr = (seconds < 10) ? "0" + Integer.toString(seconds) : Integer.toString(seconds);
                     font.draw(batch, Integer.toString(hours) + ":" + minutesStr + ":" + secondsStr, 490, 225);
-                } else if (whiteFTime > 299) {
+                } else if (whiteFTime > 299 && whiteFTime <= 3599) {
                     whiteBNumber = (int) (whiteFTime / 60);
-                    String whiteSRoundedS = "00";
-                    font.draw(batch,Integer.toString(whiteBNumber) + ":" + whiteSRoundedS, 485, 225);
+                    whiteSNumber = ((whiteFTime / 60) - whiteBNumber) * 60;
+                    whiteSRounded = (int) Math.ceil(whiteSNumber);
+                    if (whiteSRounded >= 1 && whiteSRounded <= 9) {
+                        System.out.println(whiteBNumber + whiteSRounded);
+                        String whiteSRoundedS = "0" + Integer.toString(whiteSRounded);
+                        font.draw(batch,Integer.toString(whiteBNumber) + ":" + whiteSRoundedS, 490, 225);
+                        System.out.println(whiteBNumber + whiteSRounded);
+                    } else {
+                        font.draw(batch,Integer.toString(whiteBNumber) + ":" + Integer.toString(whiteSRounded), 490, 225);
+                    }
                 } else if (whiteFTime <= 299 && whiteFTime > 240) {
                     whiteBNumber = 4;
                     whiteSNumber = ((whiteFTime / 60) - whiteBNumber) * 60;
@@ -1260,3 +1281,4 @@ public class Main extends ApplicationAdapter {
 // laptop IPv4: 192.168.0.68.
 // fix the ai
 // dont forget about change AI photo png
+// fix the "nextPuzzle"
