@@ -6,10 +6,10 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 public class Difficulty {
 
     private Texture difficultyTexture;
-    public static float x = 0;
-    public static float y = 118.8592575f;
-    public static float width = 481f;
-    public static float height = 242.2814815f;
+    public float x = 0;
+    public float y = 118.8592575f;
+    public float width = 481f;
+    public float height = 242.2814815f;
 
     public Difficulty (Texture difficultyTexture){
         this.x = x;
@@ -24,43 +24,42 @@ public class Difficulty {
     }
 
     public void setdifficultyTexture(Texture difficultyTexture) {
-        difficultyTexture = difficultyTexture;
+        this.difficultyTexture = difficultyTexture;
     }
 
-    public static float getX() {
+    public float getX() {
         return x;
     }
 
-    public static void setX(float x) {
-        Difficulty.x = x;
+    public void setX(float x) {
+        this.x = x;
     }
 
-    public static float getWidth() {
+    public float getWidth() {
         return width;
     }
 
-    public static void setWidth(float width) {
-        Difficulty.width = width;
+    public void setWidth(float width) {
+        this.width = width;
     }
 
-    public static float getY() {
+    public float getY() {
         return y;
     }
 
-    public static void setY(float y) {
-        Difficulty.y = y;
+    public void setY(float y) {
+        this.y = y;
     }
 
-    public static float getHeight() {
+    public float getHeight() {
         return height;
     }
 
-    public static void setHeight(float height) {
-        Difficulty.height = height;
+    public void setHeight(float height) {
+        this.height = height;
     }
 
     public void draw(SpriteBatch batch) {
         batch.draw(difficultyTexture, x, y, width, height);
     }
-
 }

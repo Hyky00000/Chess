@@ -7,9 +7,9 @@ public class FirstIncrement {
 
     private Texture firstIncrementTexture;
     public static float x = 0;
-    public static float y = 121.9047619f;
+    public static float y = 161.4652015f;
     public float width = 480f;
-    public float height = 236.1904762f;
+    public float height = 157.0695971f;
 
     public FirstIncrement(Texture firstIncrementTexture) {
         this.x = x;

@@ -7,8 +7,6 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.utils.ScreenUtils;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
-import java.math.MathContext;
-import java.math.RoundingMode;
 
 public class Main extends ApplicationAdapter {
 
@@ -18,7 +16,7 @@ public class Main extends ApplicationAdapter {
     private ColourChoice colourChoice;
     private WhitePromotion whitePromotion;
     private BlackPromotion blackPromotion;
-    private Difficulty difficulty;
+    Difficulty difficulty;
     private ChangeGame changeGame;
     private ChangeAI changeAI;
     private FirstIncrement firstIncrement;
@@ -86,12 +84,6 @@ public class Main extends ApplicationAdapter {
     private float whiteFTime = 300;
     private boolean whiteClockRunning = false;
     private boolean blackClockRunning = false;
-    int blackBNumber;
-    float blackSNumber;
-    int blackSRounded;
-    int whiteBNumber;
-    float whiteSNumber;
-    int whiteSRounded;
     private BitmapFont font;
 
     private boolean lastWhiteTurn = true;
@@ -224,6 +216,7 @@ public class Main extends ApplicationAdapter {
                         networkGame = null;
                         resetGameState();
                         board.ResetGame();
+                        practice = null;
                         mode = 2;
                     }
                 }
@@ -245,12 +238,10 @@ public class Main extends ApplicationAdapter {
                 }
             }
         }
-
         if (mode == 0) {
             board.draw(batch);
             board.drawCapturedPieces(batch);
             menu.draw(batch);
-            nextPuzzle.draw(batch);
             if (Gdx.input.justTouched()) {
                 float x = Gdx.input.getX();
                 float y = Gdx.graphics.getHeight() - Gdx.input.getY();
@@ -357,17 +348,41 @@ public class Main extends ApplicationAdapter {
             if (practice == null) {
                 mode = 2;
             } else {
-                if (Gdx.input.justTouched()) {
-                    float x = Gdx.input.getX();
-                    float y = Gdx.graphics.getHeight() - Gdx.input.getY();
-                    System.out.println(x);
-                    if (practice.isMoveMade()) {
-                        practice.reset();
+                if (practice.isMoveMade()) {
+                    practice.draw(batch);
+                    nextPuzzle.draw(batch);
+                    if (Gdx.input.justTouched()) {
+                        float x = Gdx.input.getX();
+                        float y = Gdx.graphics.getHeight() - Gdx.input.getY();
+                        if ((x > nextPuzzle.getX()) && (x < nextPuzzle.getX() + nextPuzzle.getWidth()) &&
+                            (y > nextPuzzle.getY()) && (y < (nextPuzzle.getY() + ((nextPuzzle.getHeight()/4)*3)))) {
+                                if (practice.difficulty == 1) {
+                                    practice.easyPositionCounter = practice.easyPositionCounter + 1;
+                                    if (practice.easyPositionCounter > 3) {
+                                        practice.easyPositionCounter = 1;
+                                    }
+                                } else if (practice.difficulty == 2) {
+                                    practice.mediumPositionCounter = practice.mediumPositionCounter + 1;
+                                    if (practice.mediumPositionCounter > 3) {
+                                        practice.mediumPositionCounter = 1;
+                                    }
+                                } else if (practice.difficulty == 3) {
+                                    practice.hardPositionCounter = practice.hardPositionCounter + 1;
+                                    if (practice.hardPositionCounter > 3) {
+                                        practice.hardPositionCounter = 1;
+                                    }
+                                }
+                                practice.reset();
+                            }
+                        }
                     } else {
+                    if (Gdx.input.justTouched()) {
+                        float x = Gdx.input.getX();
+                        float y = Gdx.graphics.getHeight() - Gdx.input.getY();
                         practice.click(x, y);
                     }
+                    practice.draw(batch);
                 }
-                practice.draw(batch);
             }
         }
         else if (mode == 8) {
@@ -603,19 +618,15 @@ public class Main extends ApplicationAdapter {
                     if (y > sixthIncrement.getY() + (fifthHeight * 3) && y < sixthIncrement.getY() + (4 * fifthHeight)) {
                         selectedIncrementType = 6;
                         selectedIncrementValue = 0;
-                        System.out.println("1");
                     } else if (y > sixthIncrement.getY() + (2 * fifthHeight) && y < sixthIncrement.getY() + (3 * fifthHeight)) {
                         selectedIncrementType = 6;
                         selectedIncrementValue = 1;
-                        System.out.println("2");
                     } else if (y > sixthIncrement.getY() + (1 * fifthHeight) && y < sixthIncrement.getY() + (2 * fifthHeight)) {
                         selectedIncrementType = 6;
                         selectedIncrementValue = 2;
-                        System.out.println("3");
                     } else if (y > sixthIncrement.getY() && y < sixthIncrement.getY() + fifthHeight) {
                         selectedIncrementType = 6;
                         selectedIncrementValue = 3;
-                        System.out.println("4");
                     }
                     startGameWithSelectedTime();
                 }
@@ -951,186 +962,35 @@ public class Main extends ApplicationAdapter {
                 font.getData().setScale(2, 2);
                 font.setColor(Color.WHITE);
             } else {
-                if (blackFTime > 3599) {
-                    int hours = (int) (blackFTime / 3600);
-                    int minutes = (int) ((blackFTime % 3600) / 60);
-                    int seconds = (int) (blackFTime % 60);
-                    String minutesStr = (minutes < 10) ? "0" + Integer.toString(minutes) : Integer.toString(minutes);
-                    String secondsStr = (seconds < 10) ? "0" + Integer.toString(seconds) : Integer.toString(seconds);
-                    font.draw(batch, Integer.toString(hours) + ":" + minutesStr + ":" + secondsStr, 490, 280);
-                } else if (blackFTime > 299 && blackFTime <= 3599) {
-                    blackBNumber = (int) (blackFTime / 60);
-                    blackSNumber = ((blackFTime / 60) - blackBNumber) * 60;
-                    blackSRounded = (int) Math.ceil(blackSNumber);
-                    if (blackSRounded >= 1 && blackSRounded <= 9) {
-                        System.out.println(blackBNumber + blackSRounded);
-                        String blackSRoundedS = "0" + Integer.toString(blackSRounded);
-                        font.draw(batch,Integer.toString(blackBNumber) + ":" + blackSRoundedS, 490, 280);
-                        System.out.println(blackBNumber + blackSRounded);
-                    } else {
-                        font.draw(batch,Integer.toString(blackBNumber) + ":" + Integer.toString(blackSRounded), 490, 280);
-                    }
-                } else if (blackFTime <= 299 && blackFTime > 240) {
-                    blackBNumber = 4;
-                    blackSNumber = ((blackFTime / 60) - blackBNumber) * 60;
-                    blackSRounded = (int) Math.ceil(blackSNumber);
-                    if (blackSRounded >= 1 && blackSRounded <= 9) {
-                        System.out.println(blackBNumber + blackSRounded);
-                        String blackSRoundedS = "0" + Integer.toString(blackSRounded);
-                        font.draw(batch, "Black: " + Integer.toString(blackBNumber) + ":" + blackSRoundedS, 490, 280);
-                    } else {
-                        System.out.println(blackBNumber + blackSRounded);
-                        font.draw(batch, "Black: " + Integer.toString(blackBNumber) + ":" + Integer.toString(blackSRounded), 490, 280);
-                    }
-                } else if (blackFTime > 239 && blackFTime <= 240) {
-                    blackBNumber = 4;
-                    String blackSRoundedS = "00";
-                    font.draw(batch, "Black: " + Integer.toString(blackBNumber) + ":" + blackSRoundedS, 490, 280);
-                } else if (blackFTime <= 239 && blackFTime > 180) {
-                    blackBNumber = 3;
-                    blackSNumber = ((blackFTime / 60) - blackBNumber) * 60;
-                    blackSRounded = (int) Math.ceil(blackSNumber);
-                    if (blackSRounded >= 1 && blackSRounded <= 9) {
-                        String blackSRoundedS = "0" + Integer.toString(blackSRounded);
-                        font.draw(batch, "Black: " + Integer.toString(blackBNumber) + ":" + blackSRoundedS, 490, 280);
-                    } else {
-                        font.draw(batch, "Black: " + Integer.toString(blackBNumber) + ":" + Integer.toString(blackSRounded), 490, 280);
-                    }
-                } else if (blackFTime > 179 && blackFTime <= 180) {
-                    blackBNumber = 3;
-                    String blackSRoundedS = "00";
-                    font.draw(batch, "Black: " + Integer.toString(blackBNumber) + ":" + blackSRoundedS, 490, 280);
-                } else if (blackFTime <= 179 && blackFTime > 120) {
-                    blackBNumber = 2;
-                    blackSNumber = ((blackFTime / 60) - blackBNumber) * 60;
-                    blackSRounded = (int) Math.ceil(blackSNumber);
-                    if (blackSRounded >= 1 && blackSRounded <= 9) {
-                        String blackSRoundedS = "0" + Integer.toString(blackSRounded);
-                        font.draw(batch, "Black: " + Integer.toString(blackBNumber) + ":" + blackSRoundedS, 490, 280);
-                    } else {
-                        font.draw(batch, "Black: " + Integer.toString(blackBNumber) + ":" + Integer.toString(blackSRounded), 490, 280);
-                    }
-                } else if (blackFTime > 119 && blackFTime <= 120) {
-                    blackBNumber = 2;
-                    String blackSRoundedS = "00";
-                    font.draw(batch, "Black: " + Integer.toString(blackBNumber) + ":" + blackSRoundedS, 490, 280);
-                } else if (blackFTime <= 119 && blackFTime > 60) {
-                    blackBNumber = 1;
-                    blackSNumber = ((blackFTime / 60) - blackBNumber) * 60;
-                    blackSRounded = (int) Math.ceil(blackSNumber);
-                    if (blackSRounded >= 1 && blackSRounded <= 9) {
-                        String blackSRoundedS = "0" + Integer.toString(blackSRounded);
-                        font.draw(batch, "Black: " + Integer.toString(blackBNumber) + ":" + blackSRoundedS, 490, 280);
-                    } else {
-                        font.draw(batch, "Black: " + Integer.toString(blackBNumber) + ":" + Integer.toString(blackSRounded), 490, 280);
-                    }
-                } else if (blackFTime > 59 && blackFTime <= 60) {
-                    blackBNumber = 1;
-                    String blackSRoundedS = "00";
-                    font.draw(batch, "Black: " + Integer.toString(blackBNumber) + ":" + blackSRoundedS, 490, 280);
-                } else if (blackFTime <= 59 && blackFTime > 0) {
-                    blackBNumber = 0;
-                    blackSNumber = ((blackFTime / 60) - blackBNumber) * 60;
-                    blackSRounded = (int) Math.ceil(blackSNumber);
-                    if (blackSRounded >= 1 && blackSRounded <= 9) {
-                        String blackSRoundedS = "0" + Integer.toString(blackSRounded);
-                        font.draw(batch, "Black: " + Integer.toString(blackBNumber) + ":" + blackSRoundedS, 490, 280);
-                    } else {
-                        font.draw(batch, "Black: " + Integer.toString(blackBNumber) + ":" + Integer.toString(blackSRounded), 490, 280);
-                    }
-                }
-
-                if (whiteFTime > 3599) {
-                    int hours = (int) (whiteFTime / 3600);
-                    int minutes = (int) ((whiteFTime % 3600) / 60);
-                    int seconds = (int) (whiteFTime % 60);
-                    String minutesStr = (minutes < 10) ? "0" + Integer.toString(minutes) : Integer.toString(minutes);
-                    String secondsStr = (seconds < 10) ? "0" + Integer.toString(seconds) : Integer.toString(seconds);
-                    font.draw(batch, Integer.toString(hours) + ":" + minutesStr + ":" + secondsStr, 490, 225);
-                } else if (whiteFTime > 299 && whiteFTime <= 3599) {
-                    whiteBNumber = (int) (whiteFTime / 60);
-                    whiteSNumber = ((whiteFTime / 60) - whiteBNumber) * 60;
-                    whiteSRounded = (int) Math.ceil(whiteSNumber);
-                    if (whiteSRounded >= 1 && whiteSRounded <= 9) {
-                        System.out.println(whiteBNumber + whiteSRounded);
-                        String whiteSRoundedS = "0" + Integer.toString(whiteSRounded);
-                        font.draw(batch,Integer.toString(whiteBNumber) + ":" + whiteSRoundedS, 490, 225);
-                        System.out.println(whiteBNumber + whiteSRounded);
-                    } else {
-                        font.draw(batch,Integer.toString(whiteBNumber) + ":" + Integer.toString(whiteSRounded), 490, 225);
-                    }
-                } else if (whiteFTime <= 299 && whiteFTime > 240) {
-                    whiteBNumber = 4;
-                    whiteSNumber = ((whiteFTime / 60) - whiteBNumber) * 60;
-                    whiteSRounded = (int) Math.ceil(whiteSNumber);
-                    if (whiteSRounded >= 1 && whiteSRounded <= 9) {
-                        String whiteSRoundedS = "0" + Integer.toString(whiteSRounded);
-                        font.draw(batch, "White: " + Integer.toString(whiteBNumber) + ":" + whiteSRoundedS, 485, 225);
-                    } else {
-                        font.draw(batch, "White: " + Integer.toString(whiteBNumber) + ":" + Integer.toString(whiteSRounded), 485, 225);
-                    }
-                } else if (whiteFTime > 239 && whiteFTime <= 240) {
-                    whiteBNumber = 4;
-                    String whiteSRoundedS = "00";
-                    font.draw(batch, "White: " + Integer.toString(whiteBNumber) + ":" + whiteSRoundedS, 485, 225);
-                } else if (whiteFTime <= 239 && whiteFTime > 180) {
-                    whiteBNumber = 3;
-                    whiteSNumber = ((whiteFTime / 60) - whiteBNumber) * 60;
-                    whiteSRounded = (int) Math.ceil(whiteSNumber);
-                    if (whiteSRounded >= 1 && whiteSRounded <= 9) {
-                        String whiteSRoundedS = "0" + Integer.toString(whiteSRounded);
-                        font.draw(batch, "White: " + Integer.toString(whiteBNumber) + ":" + whiteSRoundedS, 490, 225);
-                    } else {
-                        font.draw(batch, "White: " + Integer.toString(whiteBNumber) + ":" + Integer.toString(whiteSRounded), 490, 225);
-                    }
-                } else if (whiteFTime > 179 && whiteFTime <= 180) {
-                    whiteBNumber = 3;
-                    String whiteSRoundedS = "00";
-                    font.draw(batch, "White: " + Integer.toString(whiteBNumber) + ":" + whiteSRoundedS, 490, 225);
-                } else if (whiteFTime <= 179 && whiteFTime > 120) {
-                    whiteBNumber = 2;
-                    whiteSNumber = ((whiteFTime / 60) - whiteBNumber) * 60;
-                    whiteSRounded = (int) Math.ceil(whiteSNumber);
-                    if (whiteSRounded >= 1 && whiteSRounded <= 9) {
-                        String whiteSRoundedS = "0" + Integer.toString(whiteSRounded);
-                        font.draw(batch, "White: " + Integer.toString(whiteBNumber) + ":" + whiteSRoundedS, 490, 225);
-                    } else {
-                        font.draw(batch, "White: " + Integer.toString(whiteBNumber) + ":" + Integer.toString(whiteSRounded), 490, 225);
-                    }
-                } else if (whiteFTime > 119 && whiteFTime <= 120) {
-                    whiteBNumber = 2;
-                    String whiteSRoundedS = "00";
-                    font.draw(batch, "White: " + Integer.toString(whiteBNumber) + ":" + whiteSRoundedS, 490, 225);
-                } else if (whiteFTime <= 119 && whiteFTime > 60) {
-                    whiteBNumber = 1;
-                    whiteSNumber = ((whiteFTime / 60) - whiteBNumber) * 60;
-                    whiteSRounded = (int) Math.ceil(whiteSNumber);
-                    if (whiteSRounded >= 1 && whiteSRounded <= 9) {
-                        String whiteSRoundedS = "0" + Integer.toString(whiteSRounded);
-                        font.draw(batch, "White: " + Integer.toString(whiteBNumber) + ":" + whiteSRoundedS, 490, 225);
-                    } else {
-                        font.draw(batch, "White: " + Integer.toString(whiteBNumber) + ":" + Integer.toString(whiteSRounded), 490, 225);
-                    }
-                } else if (whiteFTime > 59 && whiteFTime <= 60) {
-                    whiteBNumber = 1;
-                    String whiteSRoundedS = "00";
-                    font.draw(batch, "White: " + Integer.toString(whiteBNumber) + ":" + whiteSRoundedS, 490, 225);
-                } else if (whiteFTime <= 59 && whiteFTime > 0) {
-                    whiteBNumber = 0;
-                    whiteSNumber = ((whiteFTime / 60) - whiteBNumber) * 60;
-                    whiteSRounded = (int) Math.ceil(whiteSNumber);
-                    if (whiteSRounded >= 1 && whiteSRounded <= 9) {
-                        String whiteSRoundedS = "0" + Integer.toString(whiteSRounded);
-                        font.draw(batch, "White: " + Integer.toString(whiteBNumber) + ":" + whiteSRoundedS, 490, 225);
-                    } else {
-                        font.draw(batch, "White: " + Integer.toString(whiteBNumber) + ":" + Integer.toString(whiteSRounded), 490, 225);
-                    }
-                }
                 font.getData().setScale(2, 2);
                 font.setColor(Color.WHITE);
+                String blackTimeString = formatTime(blackFTime);
+                font.draw(batch, blackTimeString, 490, 280);
+                String whiteTimeString = formatTime(whiteFTime);
+                font.draw(batch, whiteTimeString, 490, 225);
             }
         }
         batch.end();
+    }
+
+    private String formatTime(float timeInSeconds) {
+        if (timeInSeconds <= 0) {
+            return "0:00";
+        }
+        if (timeInSeconds > 3599) {
+            int hours = (int) (timeInSeconds / 3600);
+            float remainingAfterHours = timeInSeconds - (hours * 3600);
+            int minutes = (int) (remainingAfterHours / 60);
+            int seconds = (int) (remainingAfterHours - (minutes * 60));
+            return hours + ":" + String.format("%02d", minutes) + ":" + String.format("%02d", seconds);
+        } else if (timeInSeconds > 60) {
+            int minutes = (int) (timeInSeconds / 60);
+            int seconds = (int) (timeInSeconds - (minutes * 60));
+            return minutes + ":" + String.format("%02d", seconds);
+        } else {
+            int seconds = (int) timeInSeconds;
+            return seconds + "";
+        }
     }
 
     private void applyIncrement(boolean isWhite) {
@@ -1274,6 +1134,7 @@ public class Main extends ApplicationAdapter {
         }
     }
 }
+
 // Finished working is control+k then write what I changed then commit and push
 // Starting work is control+t then merge then pull
 // 640 x 480

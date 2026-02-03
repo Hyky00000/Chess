@@ -6,14 +6,14 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 public class Practice {
 
     private Board board;
-    private int difficulty;
+    int difficulty;
 
     private boolean waitingForClick = false;
     private boolean moveCorrect = false;
 
-    private int easyPositionCounter = 0;
-    private int mediumPositionCounter = 0;
-    private int hardPositionCounter = 0;
+    public int easyPositionCounter = 0;
+    public int mediumPositionCounter = 0;
+    public int hardPositionCounter = 0;
 
     private Texture whiteKingTex, whiteQueenTex, whiteRookTex, whiteKnightTex, whiteBishopTex, whitePawnTex;
     private Texture blackKingTex, blackQueenTex, blackRookTex, blackKnightTex, blackBishopTex, blackPawnTex;
