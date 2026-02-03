@@ -60,6 +60,10 @@ public class Main extends ApplicationAdapter {
     private Texture nextPuzzleTexture;
     private Texture backTexture;
     private Texture timesTexture;
+    private BlackToPlay blackToPlay;
+    private WhiteToPlay whiteToPlay;
+    private Texture blackToPlayTexture;
+    private Texture whiteToPlayTexture;
 
     private PlayerVsPlayer pvpGame;
     private PlayerVsComputer pvcGame;
@@ -129,6 +133,11 @@ public class Main extends ApplicationAdapter {
         blackQueenTex = new Texture("BlackQueen.png");
         whiteKingTex = new Texture("WhiteKing.png");
         blackKingTex = new Texture("BlackKing.png");
+
+        blackToPlayTexture = new Texture("BlackToPlay.png");
+        whiteToPlayTexture = new Texture("WhiteToPlay.png");
+        blackToPlay = new BlackToPlay(blackToPlayTexture);
+        whiteToPlay = new WhiteToPlay(whiteToPlayTexture);
 
         board = new Board(boardTexture, whitePawnTex, blackPawnTex, whiteRookTex, blackRookTex, whiteKnightTex, blackKnightTex, whiteBishopTex, blackBishopTex, whiteQueenTex, blackQueenTex, whiteKingTex, blackKingTex);
         menu = new Menu(menuTexture);
@@ -356,36 +365,40 @@ public class Main extends ApplicationAdapter {
                         float y = Gdx.graphics.getHeight() - Gdx.input.getY();
                         if ((x > nextPuzzle.getX()) && (x < nextPuzzle.getX() + nextPuzzle.getWidth()) &&
                             (y > nextPuzzle.getY()) && (y < (nextPuzzle.getY() + ((nextPuzzle.getHeight()/4)*3)))) {
-                                if (practice.difficulty == 1) {
-                                    practice.easyPositionCounter = practice.easyPositionCounter + 1;
-                                    if (practice.easyPositionCounter > 3) {
-                                        practice.easyPositionCounter = 1;
-                                    }
-                                } else if (practice.difficulty == 2) {
-                                    practice.mediumPositionCounter = practice.mediumPositionCounter + 1;
-                                    if (practice.mediumPositionCounter > 3) {
-                                        practice.mediumPositionCounter = 1;
-                                    }
-                                } else if (practice.difficulty == 3) {
-                                    practice.hardPositionCounter = practice.hardPositionCounter + 1;
-                                    if (practice.hardPositionCounter > 3) {
-                                        practice.hardPositionCounter = 1;
-                                    }
+                            if (practice.difficulty == 1) {
+                                practice.easyPositionCounter = practice.easyPositionCounter + 1;
+                                if (practice.easyPositionCounter > 3) {
+                                    practice.easyPositionCounter = 1;
                                 }
-                                practice.reset();
+                            } else if (practice.difficulty == 2) {
+                                practice.mediumPositionCounter = practice.mediumPositionCounter + 1;
+                                if (practice.mediumPositionCounter > 3) {
+                                    practice.mediumPositionCounter = 1;
+                                }
+                            } else if (practice.difficulty == 3) {
+                                practice.hardPositionCounter = practice.hardPositionCounter + 1;
+                                if (practice.hardPositionCounter > 3) {
+                                    practice.hardPositionCounter = 1;
+                                }
                             }
+                            practice.reset();
                         }
-                    } else {
+                    }
+                } else {
                     if (Gdx.input.justTouched()) {
                         float x = Gdx.input.getX();
                         float y = Gdx.graphics.getHeight() - Gdx.input.getY();
                         practice.click(x, y);
                     }
                     practice.draw(batch);
+                    if (practice.puzzleForWhite) {
+                        whiteToPlay.draw(batch);
+                    } else {
+                        blackToPlay.draw(batch);
+                    }
                 }
             }
-        }
-        else if (mode == 8) {
+        } else if (mode == 8) {
             board.draw(batch);
             board.drawCapturedPieces(batch);
             times.draw(batch);
@@ -1129,6 +1142,8 @@ public class Main extends ApplicationAdapter {
         blackKingTex.dispose();
         menuTexture.dispose();
         networkMenuTexture.dispose();
+        blackToPlayTexture.dispose();
+        whiteToPlayTexture.dispose();
         if (networkGame != null) {
             networkGame.disconnect();
         }

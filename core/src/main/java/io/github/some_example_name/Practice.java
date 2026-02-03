@@ -10,6 +10,7 @@ public class Practice {
 
     private boolean waitingForClick = false;
     private boolean moveCorrect = false;
+    boolean puzzleForWhite;
 
     public int easyPositionCounter = 0;
     public int mediumPositionCounter = 0;
@@ -51,6 +52,7 @@ public class Practice {
         this.blackPawnTex = blackPawnTex;
 
         setupPosition();
+        this.puzzleForWhite = board.whiteTurn;
     }
 
     private void setPieceAt(int col, int row, Piece piece) {
@@ -933,5 +935,6 @@ public class Practice {
     public void reset() {
         selectedPiece = null;
         setupPosition();
+        this.puzzleForWhite = board.whiteTurn;
     }
 }
