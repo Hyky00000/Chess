@@ -84,8 +84,8 @@ public class Main extends ApplicationAdapter {
     private int moveCount = 0;
     private boolean sixthIncrementApplied = false;
 
-    private float blackFTime = 300;
-    private float whiteFTime = 300;
+    private float blackFTime;
+    private float whiteFTime;
     private boolean whiteClockRunning = false;
     private boolean blackClockRunning = false;
     private BitmapFont font;
@@ -995,14 +995,37 @@ public class Main extends ApplicationAdapter {
             float remainingAfterHours = timeInSeconds - (hours * 3600);
             int minutes = (int) (remainingAfterHours / 60);
             int seconds = (int) (remainingAfterHours - (minutes * 60));
-            return hours + ":" + String.format("%02d", minutes) + ":" + String.format("%02d", seconds);
+
+            String minutesStr = "";
+            if (minutes < 10) {
+                minutesStr = "0" + minutes;
+            } else {
+                minutesStr = "" + minutes;
+            }
+
+            String secondsStr = "";
+            if (seconds < 10) {
+                secondsStr = "0" + seconds;
+            } else {
+                secondsStr = "" + seconds;
+            }
+
+            return hours + ":" + minutesStr + ":" + secondsStr;
         } else if (timeInSeconds > 60) {
             int minutes = (int) (timeInSeconds / 60);
             int seconds = (int) (timeInSeconds - (minutes * 60));
-            return minutes + ":" + String.format("%02d", seconds);
+
+            String secondsStr = "";
+            if (seconds < 10) {
+                secondsStr = "0" + seconds;
+            } else {
+                secondsStr = "" + seconds;
+            }
+
+            return minutes + ":" + secondsStr;
         } else {
             int seconds = (int) timeInSeconds;
-            return seconds + "";
+            return "" + seconds;
         }
     }
 

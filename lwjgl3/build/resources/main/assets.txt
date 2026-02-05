@@ -7,6 +7,7 @@ BlackPromotion.png
 BlackQueen.png
 BlackRook.png
 BlackToPlay.png
+ChangeAI.png
 ChangeGame.png
 ChessBoard.png
 ColourChoice.png
@@ -29,5 +30,4 @@ WhitePromotion.png
 WhiteQueen.png
 WhiteRook.png
 WhiteToPlay.png
-changeAI.png
 libgdx.png
