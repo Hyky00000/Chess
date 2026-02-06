@@ -7,11 +7,11 @@ public class Menu {
 
     private Texture menuTexture;
     public static float x = 0;
-    public static float y = 106.5f;
+    public static float y = 125.6838744f;
     public float width = 480f;
-    public float height = 267f;
+    public float height = 228.6322512f;
 
-    public Menu(Texture menuTexture/*, float x, float y*/) {
+    public Menu(Texture menuTexture) {
         this.x = x;
         this.y = y;
         this.width = width;
@@ -60,6 +60,6 @@ public class Menu {
     }
 
     public void draw(SpriteBatch batch) {
-        batch.draw(menuTexture, x, y);
+        batch.draw(menuTexture, x, y, width, height);
     }
 }
