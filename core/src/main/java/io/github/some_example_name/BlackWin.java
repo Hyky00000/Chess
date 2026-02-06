@@ -3,20 +3,20 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 
-public class ChangeAI {
+public class BlackWin {
 
-    private Texture changeAITexture;
-    public static float x = 480;
-    public static float y = 422.1860885f;
-    public float width = 160f;
-    public float height = 57.81391147f;
+    private Texture blackWinTexture;
+    public static float x = 150;
+    public static float y = 160;
+    public float width = 340f;
+    public float height = 160f;
 
-    public ChangeAI(Texture changeAITexture) {
+    public BlackWin(Texture blackWinTexture) {
         this.x = x;
         this.y = y;
         this.width = width;
         this.height = height;
-        this.changeAITexture = changeAITexture;
+        this.blackWinTexture = blackWinTexture;
     }
 
     public float getWidth() {
@@ -35,12 +35,12 @@ public class ChangeAI {
         this.height = height;
     }
 
-    public Texture getChangeAITexture() {
-        return changeAITexture;
+    public Texture getBlackWinTexture() {
+        return blackWinTexture;
     }
 
-    public void setChangeAITexture(Texture changeAITexture) {
-        this.changeAITexture = changeAITexture;
+    public void setBlackWinTexture(Texture blackWinTexture) {
+        this.blackWinTexture = blackWinTexture;
     }
 
     public float getX() {
@@ -60,6 +60,6 @@ public class ChangeAI {
     }
 
     public void draw(SpriteBatch batch) {
-        batch.draw(changeAITexture, x, y, width, height);
+        batch.draw(blackWinTexture, x, y, width, height);
     }
 }

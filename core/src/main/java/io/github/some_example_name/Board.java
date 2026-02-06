@@ -306,10 +306,11 @@ public class Board {
                 PieceColour opponentColour = (piece.getColour() == PieceColour.WHITE) ? PieceColour.BLACK : PieceColour.WHITE;
                 if (isCheckmate(opponentColour)) {
                     gameOver = true;
-                    gameResult = (piece.getColour() == PieceColour.WHITE) ? "White wins by checkmate!" : "Black wins by checkmate!";
                 } else if (isStalemate(opponentColour)) {
                     gameOver = true;
-                    gameResult = "Draw by stalemate!";
+                }
+                if (hasInsufficientMaterial()) {
+                    gameOver = true;
                 }
                 return true;
             } else {
@@ -457,15 +458,64 @@ public class Board {
 
         if (isCheckmate(opponentColour)) {
             gameOver = true;
-            if (piece.getColour() == PieceColour.WHITE) {
-                gameResult = "White wins by checkmate!";
-            } else {
-                gameResult = "Black wins by checkmate!";
-            }
         } else if (isStalemate(opponentColour)) {
             gameOver = true;
-            gameResult = "Draw by stalemate!";
         }
+        if (hasInsufficientMaterial()) {
+            gameOver = true;
+        }
+    }
+
+    public boolean hasInsufficientMaterial() {
+        int whitePieceCount = 0;
+        int blackPieceCount = 0;
+        int whiteBishops = 0;
+        int blackBishops = 0;
+        int whiteKnights = 0;
+        int blackKnights = 0;
+        boolean whiteHasOtherPieces = false;
+        boolean blackHasOtherPieces = false;
+
+        for (Piece piece : pieces) {
+            if (piece != null && piece.getX() < 1000) {
+                if (piece.getColour() == PieceColour.WHITE) {
+                    whitePieceCount++;
+                    if (piece instanceof Bishop) whiteBishops++;
+                    else if (piece instanceof Knight) whiteKnights++;
+                    else if (!(piece instanceof King)) whiteHasOtherPieces = true;
+                } else {
+                    blackPieceCount++;
+                    if (piece instanceof Bishop) blackBishops++;
+                    else if (piece instanceof Knight) blackKnights++;
+                    else if (!(piece instanceof King)) blackHasOtherPieces = true;
+                }
+            }
+        }
+
+        if (whitePieceCount == 1 && blackPieceCount == 1) {
+            return true;
+        }
+
+        if (!whiteHasOtherPieces && !blackHasOtherPieces) {
+            // King + Bishop vs King
+            if (whitePieceCount == 2 && blackPieceCount == 1 && whiteBishops == 1) return true;
+            if (blackPieceCount == 2 && whitePieceCount == 1 && blackBishops == 1) return true;
+
+            if (whitePieceCount == 2 && blackPieceCount == 1 && whiteKnights == 1) return true;
+            if (blackPieceCount == 2 && whitePieceCount == 1 && blackKnights == 1) return true;
+
+            if (whitePieceCount == 2 && blackPieceCount == 2 &&
+                whiteBishops == 1 && blackBishops == 1) return true;
+
+            if (whitePieceCount == 2 && blackPieceCount == 2 &&
+                whiteKnights == 1 && blackKnights == 1) return true;
+
+            if (whitePieceCount == 2 && blackPieceCount == 2 &&
+                ((whiteBishops == 1 && blackKnights == 1) ||
+                    (whiteKnights == 1 && blackBishops == 1))) return true;
+        }
+
+        return false;
     }
 
     public java.util.ArrayList<Move> getAllLegalMoves(PieceColour colour) {
@@ -1144,4 +1194,6 @@ public class Board {
             this.score = score;
         }
     }
+
+
 }
