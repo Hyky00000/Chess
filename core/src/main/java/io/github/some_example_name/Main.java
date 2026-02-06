@@ -10,8 +10,6 @@ import com.badlogic.gdx.graphics.g2d.BitmapFont;
 
 public class Main extends ApplicationAdapter {
 
-    private boolean showingGameOverScreen = false;
-    private float gameOverTimer = 0;
     private SpriteBatch batch;
     private Board board;
     private Menu menu;
@@ -20,7 +18,7 @@ public class Main extends ApplicationAdapter {
     private BlackPromotion blackPromotion;
     Difficulty difficulty;
     private ChangeGame changeGame;
-
+    private ChangeAI changeAI;
     private FirstIncrement firstIncrement;
     private SecondIncrement secondIncrement;
     private ThirdIncrement thirdIncrement;
@@ -30,10 +28,6 @@ public class Main extends ApplicationAdapter {
     private NextPuzzle nextPuzzle;
     private Back back;
     private Times times;
-    private WhiteWin whiteWin;
-    private BlackWin blackWin;
-    private Draw draw;
-    private Stalemate stalemate;
     private NetworkMenu networkMenu;
     private Texture networkMenuTexture;
     private PlayerVsNetwork networkGame;
@@ -70,10 +64,6 @@ public class Main extends ApplicationAdapter {
     private WhiteToPlay whiteToPlay;
     private Texture blackToPlayTexture;
     private Texture whiteToPlayTexture;
-    private Texture whiteWinTexture;
-    private Texture blackWinTexture;
-    private Texture drawTexture;
-    private Texture stalemateTexture;
 
     private PlayerVsPlayer pvpGame;
     private PlayerVsComputer pvcGame;
@@ -112,10 +102,6 @@ public class Main extends ApplicationAdapter {
         batch = new SpriteBatch();
         font = new BitmapFont();
 
-        whiteWinTexture = new Texture("WhiteWin.png");
-        blackWinTexture = new Texture("BlackWin.png");
-        drawTexture = new Texture("Draw.png");
-        stalemateTexture = new Texture("Stalemate.png");
         whitePromotionTexture = new Texture("WhitePromotion.png");
         blackPromotionTexture = new Texture("BlackPromotion.png");
         difficultyTexture = new Texture("Difficulty.png");
@@ -153,10 +139,6 @@ public class Main extends ApplicationAdapter {
         blackToPlay = new BlackToPlay(blackToPlayTexture);
         whiteToPlay = new WhiteToPlay(whiteToPlayTexture);
 
-        whiteWin = new WhiteWin(whiteWinTexture);
-        blackWin = new BlackWin(blackWinTexture);
-        draw = new Draw(drawTexture);
-        stalemate = new Stalemate(stalemateTexture);
         board = new Board(boardTexture, whitePawnTex, blackPawnTex, whiteRookTex, blackRookTex, whiteKnightTex, blackKnightTex, whiteBishopTex, blackBishopTex, whiteQueenTex, blackQueenTex, whiteKingTex, blackKingTex);
         menu = new Menu(menuTexture);
         colourChoice = new ColourChoice(colourChoiceTexture);
@@ -165,6 +147,7 @@ public class Main extends ApplicationAdapter {
         blackPromotion = new BlackPromotion(blackPromotionTexture);
         networkMenu = new NetworkMenu(networkMenuTexture);
         changeGame = new ChangeGame(changeGameTexture);
+        changeAI = new ChangeAI(changeAITexture);
         times = new Times(timesTexture);
         firstIncrement = new FirstIncrement(firstIncrementTexture);
         secondIncrement = new SecondIncrement(secondIncrementTexture);
@@ -220,21 +203,7 @@ public class Main extends ApplicationAdapter {
                         resetGameState();
                         practice = null;
                         board.ResetGame();
-                        if (selectedTimeIndex >= 0 && selectedTimeIndex <= 2) {
-                            mode = 9;
-                        } else if (selectedTimeIndex == 3) {
-                            mode = 10;
-                        } else if (selectedTimeIndex == 4) {
-                            mode = 11;
-                        } else if (selectedTimeIndex == 5) {
-                            mode = 12;
-                        } else if (selectedTimeIndex == 6 || selectedTimeIndex == 7) {
-                            mode = 13;
-                        } else if (selectedTimeIndex >= 8 && selectedTimeIndex <= 9) {
-                            mode = 14;
-                        } else if (selectedTimeIndex == 10) {
-                            mode = 8;
-                        }
+                        mode = 8;
                     }
                     else if (mode == 4){
                         isGameStarted = false;
@@ -259,6 +228,22 @@ public class Main extends ApplicationAdapter {
                         practice = null;
                         mode = 2;
                     }
+                }
+            }
+        }
+
+        if (mode == 3) {
+            if (Gdx.input.justTouched()) {
+                float x = Gdx.input.getX();
+                float y = Gdx.graphics.getHeight() - Gdx.input.getY();
+                if (x > changeAI.getX() && x < changeAI.getX() + changeAI.getWidth() && y > changeAI.getY() && y < (changeAI.getY() + (changeAI.getHeight() / 3))) {
+                    mode = 1;
+                    isGameStarted = false;
+                    pvcGame = null;
+                } else if (x > changeAI.getX() && x < changeAI.getX() + changeAI.getWidth() && y > (changeAI.getY() + changeAI.getHeight() / 3) && y < (changeAI.getY() + (changeAI.getHeight() - (changeAI.getHeight() / 3)))) {
+                    mode = 2;
+                    isGameStarted = false;
+                    pvcGame = null;
                 }
             }
         }
@@ -676,47 +661,46 @@ public class Main extends ApplicationAdapter {
                     blackClockRunning = true;
                 }
             } else {
-                if (!board.gameOver) {
-                    boolean shouldAIMove = (playerIsWhite && !pvcGame.isWhiteTurn()) || (!playerIsWhite && pvcGame.isWhiteTurn());
-                    if (shouldAIMove) {
-                        pvcGame.makeAIMove();
-                        boolean currentWhiteTurn = pvcGame.isWhiteTurn();
-                        if (currentWhiteTurn != lastWhiteTurn) {
-                            if (currentWhiteTurn) {
-                                blackClockRunning = false;
-                                whiteClockRunning = true;
-                                applyIncrement(false);
-                                moveCount++;
 
-                            } else {
-                                whiteClockRunning = false;
-                                blackClockRunning = true;
-                                applyIncrement(true);
-                                moveCount++;
-                            }
-                            lastWhiteTurn = currentWhiteTurn;
+                System.out.println(board.getSortedLegalMoves(PieceColour.BLACK));
+                boolean shouldAIMove = (playerIsWhite && !pvcGame.isWhiteTurn()) || (!playerIsWhite && pvcGame.isWhiteTurn());
+                if (shouldAIMove) {
+                    pvcGame.makeAIMove();
+                    boolean currentWhiteTurn = pvcGame.isWhiteTurn();
+                    if (currentWhiteTurn != lastWhiteTurn) {
+                        if (currentWhiteTurn) {
+                            blackClockRunning = false;
+                            whiteClockRunning = true;
+                            applyIncrement(false);
+                            moveCount++;
+
+                        } else {
+                            whiteClockRunning = false;
+                            blackClockRunning = true;
+                            applyIncrement(true);
+                            moveCount++;
                         }
+                        lastWhiteTurn = currentWhiteTurn;
                     }
-
-                    if (Gdx.input.justTouched()) {
-                        float x = Gdx.input.getX();
-                        float y = Gdx.graphics.getHeight() - Gdx.input.getY();
-                        boolean moveMade = pvcGame.click(x, y);
-                        boolean currentWhiteTurn = pvcGame.isWhiteTurn();
-                        if (moveMade && currentWhiteTurn != lastWhiteTurn) {
-                            if (currentWhiteTurn) {
-                                blackClockRunning = false;
-                                whiteClockRunning = true;
-                                applyIncrement(false);
-                                moveCount++;
-                            } else {
-                                whiteClockRunning = false;
-                                blackClockRunning = true;
-                                applyIncrement(true);
-                                moveCount++;
-                            }
-                            lastWhiteTurn = currentWhiteTurn;
+                }
+                if (Gdx.input.justTouched()) {
+                    float x = Gdx.input.getX();
+                    float y = Gdx.graphics.getHeight() - Gdx.input.getY();
+                    boolean moveMade = pvcGame.click(x, y);
+                    boolean currentWhiteTurn = pvcGame.isWhiteTurn();
+                    if (moveMade && currentWhiteTurn != lastWhiteTurn) {
+                        if (currentWhiteTurn) {
+                            blackClockRunning = false;
+                            whiteClockRunning = true;
+                            applyIncrement(false);
+                            moveCount++;
+                        } else {
+                            whiteClockRunning = false;
+                            blackClockRunning = true;
+                            applyIncrement(true);
+                            moveCount++;
                         }
+                        lastWhiteTurn = currentWhiteTurn;
                     }
                 }
                 pvcGame.draw(batch);
@@ -738,26 +722,24 @@ public class Main extends ApplicationAdapter {
                     blackClockRunning = true;
                 }
             } else {
-                if (!board.gameOver) {
-                    if (Gdx.input.justTouched()) {
-                        float x = Gdx.input.getX();
-                        float y = Gdx.graphics.getHeight() - Gdx.input.getY();
-                        boolean moveMade = pvpGame.click(x, y);
-                        boolean currentWhiteTurn = pvpGame.isWhiteTurn();
-                        if (moveMade && currentWhiteTurn != lastWhiteTurn) {
-                            if (currentWhiteTurn) {
-                                blackClockRunning = false;
-                                whiteClockRunning = true;
-                                applyIncrement(false);
-                                moveCount++;
-                            } else {
-                                whiteClockRunning = false;
-                                blackClockRunning = true;
-                                applyIncrement(true);
-                                moveCount++;
-                            }
-                            lastWhiteTurn = currentWhiteTurn;
+                if (Gdx.input.justTouched()) {
+                    float x = Gdx.input.getX();
+                    float y = Gdx.graphics.getHeight() - Gdx.input.getY();
+                    boolean moveMade = pvpGame.click(x, y);
+                    boolean currentWhiteTurn = pvpGame.isWhiteTurn();
+                    if (moveMade && currentWhiteTurn != lastWhiteTurn) {
+                        if (currentWhiteTurn) {
+                            blackClockRunning = false;
+                            whiteClockRunning = true;
+                            applyIncrement(false);
+                            moveCount++;
+                        } else {
+                            whiteClockRunning = false;
+                            blackClockRunning = true;
+                            applyIncrement(true);
+                            moveCount++;
                         }
+                        lastWhiteTurn = currentWhiteTurn;
                     }
                 }
                 pvpGame.draw(batch);
@@ -856,90 +838,152 @@ public class Main extends ApplicationAdapter {
                     board.promotingPawn = null;
                 }
             }
+        } else if (mode == 6) {
+            board.draw(batch);
+            board.drawCapturedPieces(batch);
+            networkMenu.draw(batch);
+
+            if (Gdx.input.justTouched()) {
+                float x = Gdx.input.getX();
+                float y = Gdx.graphics.getHeight() - Gdx.input.getY();
+
+                if (x >= networkMenu.getX() && x <= networkMenu.getX() + networkMenu.getWidth() &&
+                    y >= networkMenu.getY() && y <= networkMenu.getY() + networkMenu.getHeight()) {
+
+                    networkMenu.handleClick(x, y);
+
+                    if (networkMenu.wantsToHost() && networkMenu.isReady()) {
+                        new Thread(new Runnable() {
+                            @Override
+                            public void run() {
+                                startNetworkGameAsHost();
+                            }
+                        }).start();
+                        mode = 7;
+                    } else if (networkMenu.wantsToJoin() && networkMenu.isReady()) {
+                        new Thread(new Runnable() {
+                            @Override
+                            public void run() {
+                                startNetworkGameAsClient();
+                            }
+                        }).start();
+                        mode = 7;
+                    }
+
+                } else {
+                    networkMenu.stopTyping();
+                }
+            }
+
+            if (networkMenu.isTyping()) {
+                if (Gdx.input.isKeyJustPressed(com.badlogic.gdx.Input.Keys.BACKSPACE)) {
+                    networkMenu.removeLastCharacter();
+                }
+            }
+        } else if (mode == 7) {
+            if (networkGame == null) {
+                board.draw(batch);
+                board.drawCapturedPieces(batch);
+
+                if (networkWaitingForConnection) {
+                    networkWaitTimer += Gdx.graphics.getDeltaTime();
+                    if ((int) networkWaitTimer % 5 == 0 && (int) networkWaitTimer > 0) {
+                        System.out.println("Waiting for opponent... " + (int) networkWaitTimer + " seconds");
+                    }
+                }
+            } else {
+                networkGame.update();
+
+                if (board.promotingPawn != null) {
+                    promotingPawn = board.promotingPawn;
+                    isWhitePromotion = (promotingPawn.getColour() == PieceColour.WHITE);
+                    previousMode = 7;
+                    mode = 5;
+                    if (isWhitePromotion) {
+                        whiteClockRunning = true;
+                        blackClockRunning = false;
+                    } else {
+                        whiteClockRunning = false;
+                        blackClockRunning = true;
+                    }
+                } else {
+                    if (Gdx.input.justTouched()) {
+                        float x = Gdx.input.getX();
+                        float y = Gdx.graphics.getHeight() - Gdx.input.getY();
+                        boolean moveMade = networkGame.click(x, y);
+                        boolean currentWhiteTurn = networkGame.isWhiteTurn();
+                        if (moveMade && currentWhiteTurn != lastWhiteTurn) {
+                            if (currentWhiteTurn) {
+                                blackClockRunning = false;
+                                whiteClockRunning = true;
+                                applyIncrement(false);
+                                moveCount++;
+                            } else {
+                                whiteClockRunning = false;
+                                blackClockRunning = true;
+                                applyIncrement(true);
+                                moveCount++;
+                            }
+                            lastWhiteTurn = currentWhiteTurn;
+                        }
+                    }
+
+                    networkGame.draw(batch);
+                }
+            }
         }
 
         float deltaTime = Gdx.graphics.getDeltaTime();
         boolean gameOver = board.gameOver;
-        if (board.gameOver && (mode == 3 || mode == 4 || mode == 7)) {
-
-            whiteClockRunning = false;
-            blackClockRunning = false;
-
-            boolean clickedImage = false;
-
-            if (board.isCheckmate(PieceColour.BLACK)){
-                whiteWin.draw(batch);
-
-                if (Gdx.input.justTouched()) {
-                    float x = Gdx.input.getX();
-                    float y = Gdx.graphics.getHeight() - Gdx.input.getY();
-                    if (x > whiteWin.getX() && x < whiteWin.getX() + whiteWin.getWidth()
-                        && y > whiteWin.getY() && y < whiteWin.getY() + whiteWin.getHeight()) {
-                        clickedImage = true;
+        if ((mode == 3 || mode == 4 || mode == 5 || mode == 7) && isGameStarted) {
+            if (!gameOver) {
+                if (mode == 3 || mode == 4 || mode == 7) {
+                    if (whiteClockRunning && whiteFTime > 0) {
+                        whiteFTime = whiteFTime - deltaTime;
+                        if (whiteFTime <= 0) {
+                            whiteFTime = 0;
+                        }
                     }
-                }
-            }
-            else if (board.isCheckmate(PieceColour.WHITE)){
-                blackWin.draw(batch);
 
-                if (Gdx.input.justTouched()) {
-                    float x = Gdx.input.getX();
-                    float y = Gdx.graphics.getHeight() - Gdx.input.getY();
-                    if (x > blackWin.getX() && x < blackWin.getX() + blackWin.getWidth()
-                        && y > blackWin.getY() && y < blackWin.getY() + blackWin.getHeight()) {
-                        clickedImage = true;
+                    if (blackClockRunning && blackFTime > 0) {
+                        blackFTime = blackFTime - deltaTime;
+                        if (blackFTime <= 0) {
+                            blackFTime = 0;
+                        }
                     }
-                }
-            }
-            else if (board.isStalemate(PieceColour.WHITE)
-                || board.isStalemate(PieceColour.BLACK)){
-                stalemate.draw(batch);
-
-                if (Gdx.input.justTouched()) {
-                    float x = Gdx.input.getX();
-                    float y = Gdx.graphics.getHeight() - Gdx.input.getY();
-                    if (x > stalemate.getX() && x < stalemate.getX() + stalemate.getWidth()
-                        && y > stalemate.getY() && y < stalemate.getY() + stalemate.getHeight()) {
-                        clickedImage = true;
-                    }
-                }
-            }
-            else if (board.hasInsufficientMaterial()){
-                draw.draw(batch);
-
-                if (Gdx.input.justTouched()) {
-                    float x = Gdx.input.getX();
-                    float y = Gdx.graphics.getHeight() - Gdx.input.getY();
-                    if (x > draw.getX() && x < draw.getX() + draw.getWidth()
-                        && y > draw.getY() && y < draw.getY() + draw.getHeight()) {
-                        clickedImage = true;
+                } else if (mode == 5) {
+                    if (isWhitePromotion) {
+                        if (whiteClockRunning && whiteFTime > 0) {
+                            whiteFTime = whiteFTime - deltaTime;
+                            if (whiteFTime <= 0) {
+                                whiteFTime = 0;
+                            }
+                        }
+                    } else {
+                        if (blackClockRunning && blackFTime > 0) {
+                            blackFTime = blackFTime - deltaTime;
+                            if (blackFTime <= 0) {
+                                blackFTime = 0;
+                            }
+                        }
                     }
                 }
             }
 
-            if (clickedImage) {
-
-                resetGameState();
-                board.ResetGame();
-
-                if (mode == 3) {
-                    pvcGame = new PlayerVsComputer(board, playerIsWhite, aiDifficulty);
-                }
-                if (mode == 4) {
-                    pvpGame = new PlayerVsPlayer(board);
-                }
-
-                whiteFTime = selectedTimeSeconds;
-                blackFTime = selectedTimeSeconds;
-                moveCount = 0;
-                sixthIncrementApplied = false;
-                isGameStarted = true;
-                lastWhiteTurn = true;
-                board.gameOver = false;
+            if (selectedTimeIndex == 10 && selectedTimeSeconds == Float.MAX_VALUE) {
+                font.draw(batch, " ", 490, 280);
+                font.draw(batch, " ", 485, 225);
+                font.getData().setScale(2, 2);
+                font.setColor(Color.WHITE);
+            } else {
+                font.getData().setScale(2, 2);
+                font.setColor(Color.WHITE);
+                String blackTimeString = formatTime(blackFTime);
+                font.draw(batch, blackTimeString, 490, 280);
+                String whiteTimeString = formatTime(whiteFTime);
+                font.draw(batch, whiteTimeString, 490, 225);
             }
         }
-
-
         batch.end();
     }
 
@@ -1127,10 +1171,6 @@ public class Main extends ApplicationAdapter {
         if (networkGame != null) {
             networkGame.disconnect();
         }
-        whiteWinTexture.dispose();
-        blackWinTexture.dispose();
-        drawTexture.dispose();
-        stalemateTexture.dispose();
     }
 }
 

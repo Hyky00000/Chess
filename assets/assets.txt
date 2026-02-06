@@ -7,13 +7,10 @@ BlackPromotion.png
 BlackQueen.png
 BlackRook.png
 BlackToPlay.png
-BlackWin.png
-ChangeAI.png
 ChangeGame.png
 ChessBoard.png
 ColourChoice.png
 Difficulty.png
-Draw.png
 FifthIncrement.png
 FirstIncrement.png
 FourthIncrement.png
@@ -22,7 +19,6 @@ NetworkMenu.png
 NextPuzzle.png
 SecondIncrement.png
 SixthIncrement.png
-Stalemate.png
 ThirdIncrement.png
 Times.png
 WhiteBishop.png
@@ -33,5 +29,5 @@ WhitePromotion.png
 WhiteQueen.png
 WhiteRook.png
 WhiteToPlay.png
-WhiteWin.png
+changeAI.png
 libgdx.png
