@@ -661,6 +661,8 @@ public class Main extends ApplicationAdapter {
                     blackClockRunning = true;
                 }
             } else {
+
+                System.out.println(board.getSortedLegalMoves(PieceColour.BLACK));
                 boolean shouldAIMove = (playerIsWhite && !pvcGame.isWhiteTurn()) || (!playerIsWhite && pvcGame.isWhiteTurn());
                 if (shouldAIMove) {
                     pvcGame.makeAIMove();
@@ -681,7 +683,6 @@ public class Main extends ApplicationAdapter {
                         lastWhiteTurn = currentWhiteTurn;
                     }
                 }
-
                 if (Gdx.input.justTouched()) {
                     float x = Gdx.input.getX();
                     float y = Gdx.graphics.getHeight() - Gdx.input.getY();
