@@ -8,7 +8,6 @@ public class BlackPromotion {
     private Texture blackPromotionTexture;
     public static float x = 81464/205f;
     public static float y = 22f;
-    //public float width = 12426/205f;
     public float width = 61.61463415f;
     public float height = 218f;
 

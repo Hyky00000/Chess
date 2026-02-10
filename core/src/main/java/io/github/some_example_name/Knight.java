@@ -20,7 +20,6 @@ public class Knight extends Piece {
             (changeX == 1 && (changeY == 2 || changeY == -2)) ||
             (changeX == -1 && (changeY == 2 || changeY == -2))) {
 
-            // next square
             for (Piece piece : board.getPieces()) {
                 int pieceCol = (int)((piece.getX() - board.boardX - board.borderOffsetX) / board.squareSize);
                 int pieceRow = (int)((piece.getY() - board.boardY - board.borderOffsetY) / board.squareSize);
@@ -33,7 +32,7 @@ public class Knight extends Piece {
                     }
                 }
             }
-            return true; // Empty square
+            return true;
         }
         return false;
     }

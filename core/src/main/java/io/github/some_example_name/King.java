@@ -21,29 +21,24 @@ public class King extends Piece {
             return false;
         }
 
-        // Normal king move
         boolean validMove = false;
         if (changeX >= -1 && changeX <= 1 && changeY >= -1 && changeY <= 1) {
             validMove = true;
         }
 
-        // Castling move
         if (!hasMoved && changeY == 0 && (changeX == 2 || changeX == -2)) {
-            // Check if squares between king and rook are empty
-            if (changeX == 2) { // Kingside
-                // Check squares between king and rook (columns 5 and 6)
+            if (changeX == 2) {
                 for (int col = currentCol + 1; col <= currentCol + 2; col++) {
                     for (Piece piece : board.getPieces()) {
-                        if (piece.getX() < 1000) { // Only check pieces on board
+                        if (piece.getX() < 1000) {
                             int pieceCol = (int) ((piece.getX() - board.boardX - board.borderOffsetX) / board.squareSize);
                             int pieceRow = (int) ((piece.getY() - board.boardY - board.borderOffsetY) / board.squareSize);
                             if (pieceCol == col && pieceRow == currentRow) {
-                                return false; // Piece in the way
+                                return false;
                             }
                         }
                     }
                 }
-                // Check if rook hasn't moved and is in right position
                 boolean rookFound = false;
                 for (Piece piece : board.getPieces()) {
                     if (piece instanceof Rook && piece.getColour() == this.colour && !((Rook) piece).hasMoved) {
@@ -56,20 +51,18 @@ public class King extends Piece {
                     }
                 }
                 if (!rookFound) return false;
-            } else { // Queenside
-                // Check squares between king and rook (columns 1, 2, 3)
+            } else {
                 for (int col = currentCol - 1; col >= currentCol - 2; col--) {
                     for (Piece piece : board.getPieces()) {
-                        if (piece.getX() < 1000) { // Only check pieces on board
+                        if (piece.getX() < 1000) {
                             int pieceCol = (int) ((piece.getX() - board.boardX - board.borderOffsetX) / board.squareSize);
                             int pieceRow = (int) ((piece.getY() - board.boardY - board.borderOffsetY) / board.squareSize);
                             if (pieceCol == col && pieceRow == currentRow) {
-                                return false; // Piece in the way
+                                return false;
                             }
                         }
                     }
                 }
-                // Check if rook hasn't moved and is in right position
                 boolean rookFound = false;
                 for (Piece piece : board.getPieces()) {
                     if (piece instanceof Rook && piece.getColour() == this.colour && !((Rook) piece).hasMoved) {
@@ -84,8 +77,7 @@ public class King extends Piece {
                 if (!rookFound) return false;
             }
 
-            // Check if castling through check
-            if (changeX == 2) { // Kingside
+            if (changeX == 2) {
                 for (int col = currentCol; col <= currentCol + 2; col++) {
                     for (Piece piece : board.getPieces()) {
                         if (piece.getColour() != this.colour && piece.getX() < 1000) {
@@ -96,7 +88,7 @@ public class King extends Piece {
                         }
                     }
                 }
-            } else { // Queenside
+            } else {
                 for (int col = currentCol; col >= currentCol - 2; col--) {
                     for (Piece piece : board.getPieces()) {
                         if (piece.getColour() != this.colour && piece.getX() < 1000) {
@@ -115,9 +107,8 @@ public class King extends Piece {
             return false;
         }
 
-        // Check if target square has friendly piece
         for (Piece piece : board.getPieces()) {
-            if (piece.getX() < 1000) { // Only check pieces on board
+            if (piece.getX() < 1000) {
                 int pieceCol = (int) ((piece.getX() - board.boardX - board.borderOffsetX) / board.squareSize);
                 int pieceRow = (int) ((piece.getY() - board.boardY - board.borderOffsetY) / board.squareSize);
 

@@ -18,9 +18,31 @@ public class Bishop extends Piece {
         if (changeX == 0 || changeY == 0) {
             return false;
         }
-        if (changeX == changeY) {
-        } else if (changeX == -changeY) {
-        } else {
+        if (changeX == 0 || changeY == 0) {
+            return false;
+        }
+
+        boolean isDiagonalMove = false;
+
+        if (changeX > 0 && changeY > 0) {
+            if (changeX == changeY) {
+                isDiagonalMove = true;
+            }
+        } else if (changeX > 0 && changeY < 0) {
+            if (changeX == -changeY) {
+                isDiagonalMove = true;
+            }
+        } else if (changeX < 0 && changeY > 0) {
+            if (-changeX == changeY) {
+                isDiagonalMove = true;
+            }
+        } else if (changeX < 0 && changeY < 0) {
+            if (changeX == changeY) {
+                isDiagonalMove = true;
+            }
+        }
+
+        if (!isDiagonalMove) {
             return false;
         }
 

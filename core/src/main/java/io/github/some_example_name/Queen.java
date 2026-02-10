@@ -20,11 +20,35 @@ public class Queen extends Piece {
         }
 
         boolean validDirection = false;
-        if (changeX == 0) validDirection = true;
-        if (changeY == 0) validDirection = true;
-        if (Math.abs(changeX) == Math.abs(changeY)) validDirection = true;
+        if (changeX == 0 && changeY == 0) {
+            return false;
+        }
 
-        if (validDirection == false) return false;
+        boolean movingStraight = false;
+        boolean movingDiagonal = false;
+
+        if (changeX == 0 && changeY != 0) {
+            movingStraight = true;
+        }
+        if (changeY == 0 && changeX != 0) {
+            movingStraight = true;
+        }
+
+        int absChangeX = changeX;
+        if (absChangeX < 0) {
+            absChangeX = -absChangeX;
+        }
+        int absChangeY = changeY;
+        if (absChangeY < 0) {
+            absChangeY = -absChangeY;
+        }
+        if (absChangeX == absChangeY) {
+            movingDiagonal = true;
+        }
+
+        if (!movingStraight && !movingDiagonal) {
+            return false;
+        }
 
         int stepX = 0;
         int stepY = 0;

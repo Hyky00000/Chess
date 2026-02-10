@@ -29,10 +29,7 @@ public class Main extends ApplicationAdapter {
     private Back back;
     private Times times;
     private int mode = 0;
-    float menuChoiceHeight = 55.65861f;
-    float menuGapHeight = 14.78852f;
     float difficultyChoiceHeight = 60.570370370370370370f;
-    private float promotionGap = 54.5f;
 
     private Texture whitePromotionTexture;
     private Texture blackPromotionTexture;
@@ -47,7 +44,6 @@ public class Main extends ApplicationAdapter {
     private Texture whiteQueenTex, blackQueenTex;
     private Texture whiteKingTex, blackKingTex;
     private Texture changeGameTexture;
-    private Texture changeAITexture;
     private Texture firstIncrementTexture;
     private Texture secondIncrementTexture;
     private Texture thirdIncrementTexture;
@@ -104,7 +100,6 @@ public class Main extends ApplicationAdapter {
         boardTexture = new Texture("ChessBoard.png");
         menuTexture = new Texture("Menu.png");
         changeGameTexture = new Texture("ChangeGame.png");
-        changeAITexture = new Texture("changeAI.png");
         firstIncrementTexture = new Texture("FirstIncrement.png");
         secondIncrementTexture = new Texture("SecondIncrement.png");
         thirdIncrementTexture = new Texture("ThirdIncrement.png");
@@ -159,6 +154,11 @@ public class Main extends ApplicationAdapter {
         // 0 is start, 1 is choose colour, 2 is difficulty, 3 is vs ai, 4 is pvp, 5 is pawn promotion,
         // 6 is network menu, 7 is network game, 8 is times selection, 9-14 are increment selections, 15 is practice
 
+        if (mode != previousMode) {
+            System.out.println("Mode = " + mode);
+            previousMode = mode;
+        }
+
         if (mode >= 1 && mode <= 16) {
             back.draw(batch);
             changeGame.draw(batch);
@@ -198,9 +198,8 @@ public class Main extends ApplicationAdapter {
                         pvpGame = null;
                         pvcGame = null;
                         resetGameState();
-                        practice = null;
                         board.ResetGame();
-
+                        practice = null;
                         if (selectedTimeIndex >= 0 && selectedTimeIndex <= 2) {
                             mode = 9;
                         } else if (selectedTimeIndex == 3) {
@@ -223,7 +222,7 @@ public class Main extends ApplicationAdapter {
                         pvcGame = null;
                         resetGameState();
                         board.ResetGame();
-                        mode = previousMode;
+                        mode = 8;
                     }
                     else if (mode >= 9 && mode <= 14){
                         mode = 8;
@@ -280,6 +279,12 @@ public class Main extends ApplicationAdapter {
                     y >= colourChoice.getY() && y <= colourChoice.getY() + colourChoice.getHeight()) {
                     float clickY = y - colourChoice.getY();
                     playerIsWhite = clickY < colourChoice.getHeight();
+                    if (playerIsWhite){
+                        System.out.println("White");
+                    }
+                    else {
+                        System.out.println("black");
+                    }
                     previousMode = 1;
                     mode = 2;
                 }
@@ -298,6 +303,7 @@ public class Main extends ApplicationAdapter {
                     (y < difficulty.getY() + (3 * boxHeight)) && (y > difficulty.getY() + (2 * boxHeight))) {
                     if (aiOrPractice == 0) {
                         aiDifficulty = 1;
+                        System.out.println("Easy");
                         gameTypeAfterTimeSelection = 1;
                         previousMode = 2;
                         mode = 8;
@@ -308,11 +314,13 @@ public class Main extends ApplicationAdapter {
                             blackKingTex, blackQueenTex, blackRookTex, blackKnightTex, blackBishopTex, blackPawnTex);
                         previousMode = 2;
                         mode = 15;
+                        System.out.println("Easy");
                     }
                 } else if ((x > difficulty.getX()) && (x < difficulty.getX() + difficulty.getWidth()) &&
                     (y < difficulty.getY() + (2 * boxHeight)) && (y > difficulty.getY() + (1 * boxHeight))) {
                     if (aiOrPractice == 0) {
                         aiDifficulty = 2;
+                        System.out.println("medium");
                         gameTypeAfterTimeSelection = 1;
                         previousMode = 2;
                         mode = 8;
@@ -323,11 +331,13 @@ public class Main extends ApplicationAdapter {
                             blackKingTex, blackQueenTex, blackRookTex, blackKnightTex, blackBishopTex, blackPawnTex);
                         previousMode = 2;
                         mode = 15;
+                        System.out.println("medium");
                     }
                 } else if ((x > difficulty.getX()) && (x < difficulty.getX() + difficulty.getWidth()) &&
                     (y < difficulty.getY() + (1 * boxHeight)) && (y > difficulty.getY())) {
                     if (aiOrPractice == 0) {
                         aiDifficulty = 3;
+                        System.out.println("Hard");
                         gameTypeAfterTimeSelection = 1;
                         previousMode = 2;
                         mode = 8;
@@ -337,6 +347,7 @@ public class Main extends ApplicationAdapter {
                             whiteKingTex, whiteQueenTex, whiteRookTex, whiteKnightTex, whiteBishopTex, whitePawnTex,
                             blackKingTex, blackQueenTex, blackRookTex, blackKnightTex, blackBishopTex, blackPawnTex);
                         previousMode = 2;
+                        System.out.println("Hard");
                         mode = 15;
                     }
                 }
@@ -651,9 +662,8 @@ public class Main extends ApplicationAdapter {
                 }
             } else {
 
-                System.out.println(board.getSortedLegalMoves(PieceColour.BLACK));
                 boolean shouldAIMove = (playerIsWhite && !pvcGame.isWhiteTurn()) || (!playerIsWhite && pvcGame.isWhiteTurn());
-                if (shouldAIMove) {
+                if (shouldAIMove && !board.gameOver) {
                     pvcGame.makeAIMove();
                     boolean currentWhiteTurn = pvcGame.isWhiteTurn();
                     if (currentWhiteTurn != lastWhiteTurn) {
@@ -662,12 +672,16 @@ public class Main extends ApplicationAdapter {
                             whiteClockRunning = true;
                             applyIncrement(false);
                             moveCount++;
+                            float halfMove = moveCount / 2.0f;
+                            System.out.println("Move: " + halfMove);
 
                         } else {
                             whiteClockRunning = false;
                             blackClockRunning = true;
                             applyIncrement(true);
                             moveCount++;
+                            float halfMove = moveCount / 2.0f;
+                            System.out.println("Move: " + halfMove);
                         }
                         lastWhiteTurn = currentWhiteTurn;
                     }
@@ -683,11 +697,15 @@ public class Main extends ApplicationAdapter {
                             whiteClockRunning = true;
                             applyIncrement(false);
                             moveCount++;
+                            float halfMove = moveCount / 2.0f;
+                            System.out.println("Move: " + halfMove);
                         } else {
                             whiteClockRunning = false;
                             blackClockRunning = true;
                             applyIncrement(true);
                             moveCount++;
+                            float halfMove = moveCount / 2.0f;
+                            System.out.println("Move: " + halfMove);
                         }
                         lastWhiteTurn = currentWhiteTurn;
                     }
@@ -722,11 +740,15 @@ public class Main extends ApplicationAdapter {
                             whiteClockRunning = true;
                             applyIncrement(false);
                             moveCount++;
+                            float halfMove = moveCount / 2.0f;
+                            System.out.println("Move: " + halfMove);
                         } else {
                             whiteClockRunning = false;
                             blackClockRunning = true;
                             applyIncrement(true);
                             moveCount++;
+                            float halfMove = moveCount / 2.0f;
+                            System.out.println("Move: " + halfMove);
                         }
                         lastWhiteTurn = currentWhiteTurn;
                     }
@@ -834,7 +856,6 @@ public class Main extends ApplicationAdapter {
                             whiteFTime = 0;
                         }
                     }
-
                     if (blackClockRunning && blackFTime > 0) {
                         blackFTime = blackFTime - deltaTime;
                         if (blackFTime <= 0) {
@@ -874,6 +895,33 @@ public class Main extends ApplicationAdapter {
                 font.draw(batch, whiteTimeString, 490, 225);
             }
         }
+
+        if (mode == 3) {
+            boolean currentTurn = pvcGame.isWhiteTurn();
+            if (currentTurn) {
+                if (board.isKingInCheck(PieceColour.WHITE)) {
+                    System.out.println("check!");
+                }
+            } else {
+                if (board.isKingInCheck(PieceColour.BLACK)) {
+                    System.out.println("check");
+                }
+            }
+        }
+
+        if (mode == 4) {
+            boolean currentTurn = pvpGame.isWhiteTurn();
+            if (currentTurn) {
+                if (board.isKingInCheck(PieceColour.WHITE)) {
+                    System.out.println("check");
+                }
+            } else {
+                if (board.isKingInCheck(PieceColour.BLACK)) {
+                    System.out.println("check");
+                }
+            }
+        }
+
         batch.end();
     }
 

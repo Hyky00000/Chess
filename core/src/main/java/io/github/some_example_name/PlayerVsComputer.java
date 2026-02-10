@@ -1,4 +1,5 @@
 package io.github.some_example_name;
+
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import java.util.Random;
@@ -25,6 +26,14 @@ public class PlayerVsComputer {
             return false;
         }
 
+        int col = (int)((x - board.boardX - board.borderOffsetX) / board.squareSize);
+        int row = (int)((y - board.boardY - board.borderOffsetY) / board.squareSize);
+
+        if (col >= 0 && col < 8 && row >= 0 && row < 8) {
+            String square = getSquareNotation(col, row);
+            System.out.println("clicked " + square);
+        }
+
         if ((playerIsWhite && !whiteTurn) || (!playerIsWhite && whiteTurn)) {
             return false;
         }
@@ -37,10 +46,16 @@ public class PlayerVsComputer {
                     if (whiteTurn && piece.getColour() == PieceColour.WHITE) {
                         selectedPiece = piece;
                         pieceSelected = true;
+                        String pieceType = getPieceType(piece);
+                        String colour = piece.getColour() == PieceColour.WHITE ? "white" : "black";
+                        System.out.println("selected " + colour + " " + pieceType);
                         return false;
                     } else if (!whiteTurn && piece.getColour() == PieceColour.BLACK) {
                         selectedPiece = piece;
                         pieceSelected = true;
+                        String pieceType = getPieceType(piece);
+                        String colour = piece.getColour() == PieceColour.WHITE ? "white" : "black";
+                        System.out.println("selected " + colour + " " + pieceType);
                         return false;
                     }
                     break;
@@ -59,11 +74,25 @@ public class PlayerVsComputer {
         return false;
     }
 
-    // AI makes a move based on difficulty level
+    private String getSquareNotation(int col, int row) {
+        char colChar = (char)('A' + col);
+        int displayRow = row + 1;
+        return "" + colChar + displayRow;
+    }
+
+    private String getPieceType(Piece piece) {
+        if (piece instanceof Pawn) return "pawn";
+        if (piece instanceof Knight) return "knight";
+        if (piece instanceof Bishop) return "bishop";
+        if (piece instanceof Rook) return "rook";
+        if (piece instanceof Queen) return "queen";
+        if (piece instanceof King) return "king";
+        return "unknown";
+    }
+
     public void makeAIMove() {
-        if (board.promotingPawn != null) {
-            return;
-        }
+        if (board.gameOver) return;
+        if (board.promotingPawn != null) return;
 
         PieceColour aiColour;
         if (playerIsWhite) {
@@ -72,75 +101,126 @@ public class PlayerVsComputer {
             aiColour = PieceColour.WHITE;
         }
 
-        java.util.ArrayList<Board.Move> legalMoves = board.getAllLegalMoves(aiColour);
+        java.util.ArrayList<Board.MoveWithScore> sortedMovesWithScores = board.getSortedLegalMovesWithScores(aiColour);
 
-        if (legalMoves.size() > 0) {
-            Board.Move chosenMove;
+        // Print all moves with their evaluations
+        for (int i = 0; i < sortedMovesWithScores.size(); i++) {
+            Board.MoveWithScore moveWithScore = sortedMovesWithScores.get(i);
+            Board.Move move = moveWithScore.move;
+            String details = moveWithScore.details;
+            int total = moveWithScore.score;
 
-            switch (aiDifficulty) {
-                case 1: // Easy bot completely random moves
-                    chosenMove = getRandomMove(legalMoves);
-                    break;
-                case 2: // Medium bot picks from good but not best moves
-                    chosenMove = getMediumMove(aiColour);
-                    break;
-                case 3: // Hard bot - picks from best moves
-                    chosenMove = getHardMove(aiColour);
-                    break;
-                default:
-                    chosenMove = getRandomMove(legalMoves);
-                    break;
+            // Get square notation
+            String fromSquare = getSquareNotationFromCoords(move.piece.getX(), move.piece.getY());
+            String toSquare = getSquareNotationFromCoords(move.targetX, move.targetY);
+
+            System.out.println((i + 1) + ". " + fromSquare + " to " + toSquare + ": " + details + "score = " + total);
+        }
+
+        if (sortedMovesWithScores.size() == 0) return;
+
+        Board.Move chosenMove;
+        switch (aiDifficulty) {
+            case 1:
+                chosenMove = getRandomMoveFromMoveWithScore(sortedMovesWithScores);
+                break;
+            case 2:
+                chosenMove = getMediumMoveFromMoveWithScore(sortedMovesWithScores);
+                break;
+            case 3:
+                chosenMove = getHardMoveFromMoveWithScore(sortedMovesWithScores);
+                break;
+            default:
+                chosenMove = getRandomMoveFromMoveWithScore(sortedMovesWithScores);
+                break;
+        }
+
+        // Print the played move
+        int playedIndex = -1;
+        for (int i = 0; i < sortedMovesWithScores.size(); i++) {
+            if (sortedMovesWithScores.get(i).move == chosenMove) {
+                playedIndex = i + 1;
+                break;
             }
+        }
 
-            // ACTUALLY making the move on the board
-            board.makeMove(chosenMove);
-            if (board.promotingPawn == null) {
-                whiteTurn = !whiteTurn;  // Switch turns after AI moves
-            }
+        String fromSquare = getSquareNotationFromCoords(chosenMove.piece.getX(), chosenMove.piece.getY());
+        String toSquare = getSquareNotationFromCoords(chosenMove.targetX, chosenMove.targetY);
+        String pieceType = getPieceType(chosenMove.piece);
+
+        System.out.println("played " + playedIndex + ". " + pieceType + " " + fromSquare + " to " + toSquare);
+
+        board.makeMove(chosenMove);
+        if (board.promotingPawn == null) {
+            whiteTurn = !whiteTurn;
         }
     }
 
-    // Easy AI picking random move from all legal moves
+
+
+    private Board.Move getRandomMoveFromMoveWithScore(java.util.ArrayList<Board.MoveWithScore> movesWithScores) {
+        int randomIndex = random.nextInt(movesWithScores.size());
+        return movesWithScores.get(randomIndex).move;
+    }
+
+    private Board.Move getMediumMoveFromMoveWithScore(java.util.ArrayList<Board.MoveWithScore> movesWithScores) {
+        if (movesWithScores.size() == 0) {
+            return null;
+        }
+
+        int topMovesCount = movesWithScores.size() / 3;
+        if (topMovesCount < 1) {
+            topMovesCount = 1;
+        }
+
+        int randomIndex = random.nextInt(topMovesCount);
+        return movesWithScores.get(randomIndex).move;
+    }
+
+    private Board.Move getHardMoveFromMoveWithScore(java.util.ArrayList<Board.MoveWithScore> movesWithScores) {
+        if (movesWithScores.size() == 0)
+            return null;
+        int randomIndex = random.nextInt(movesWithScores.size());
+        return
+            movesWithScores.get(randomIndex).move;
+    }
+
+
+    private String getSquareNotationFromCoords(float x, float y) {
+        int col = (int)((x - board.boardX - board.borderOffsetX) / board.squareSize);
+        int row = (int)((y - board.boardY - board.borderOffsetY) / board.squareSize);
+        return getSquareNotation(col, row);
+    }
+
     private Board.Move getRandomMove(java.util.ArrayList<Board.Move> legalMoves) {
-        // Pick a random number between 0 and size of legal moves
         int randomIndex = random.nextInt(legalMoves.size());
         return legalMoves.get(randomIndex);
     }
 
-    // Medium AI pick from good moves from the top third
-    private Board.Move getMediumMove(PieceColour aiColour) {
-        // Get all legal moves sorted from best to worst
-        java.util.ArrayList<Board.Move> sortedMoves = board.getSortedLegalMoves(aiColour);
+    private Board.Move getMediumMove(java.util.ArrayList<Board.Move> sortedMoves) {
         if (sortedMoves.size() == 0) {
             return null;
         }
 
-        // Calculate how many moves to consider from the top
-        int topMovesCount = sortedMoves.size() / 3;  // Top third of moves
+        int topMovesCount = sortedMoves.size() / 3;
         if (topMovesCount < 1) {
-            topMovesCount = 1;  //make sure if theres one move left then its 1 instead of 0.333333......
+            topMovesCount = 1;
         }
 
-        // Pick a random move from the top moves
         int randomIndex = random.nextInt(topMovesCount);
         return sortedMoves.get(randomIndex);
     }
 
-    // Hard AI - picks from the very best moves
-    private Board.Move getHardMove(PieceColour aiColour) {
-        // Get all legal moves sorted from best to worst
-        java.util.ArrayList<Board.Move> sortedMoves = board.getSortedLegalMoves(aiColour);
+    private Board.Move getHardMove(java.util.ArrayList<Board.Move> sortedMoves) {
         if (sortedMoves.size() == 0) {
-            return null;  // No moves :_[
+            return null;
         }
 
-        // Decide how many top moves to consider
-        int topMovesToConsider = 2;  // Always pick from top 2 moves so games dont repeat
+        int topMovesToConsider = 2;
         if (sortedMoves.size() < 2) {
-            topMovesToConsider = sortedMoves.size();  // if there is only one move then of course the one move
+            topMovesToConsider = sortedMoves.size();
         }
 
-        // Pick randomly from the top moves
         int randomIndex = random.nextInt(topMovesToConsider);
         return sortedMoves.get(randomIndex);
     }

@@ -11,7 +11,7 @@ public class ColourChoice {
     public float width = 481f;
     public float height = 315.8610354f;
 
-    public ColourChoice(Texture colourChoiceTexture/*, float x, float y*/) {
+    public ColourChoice(Texture colourChoiceTexture) {
         this.x = x;
         this.y = y;
         this.width = width;

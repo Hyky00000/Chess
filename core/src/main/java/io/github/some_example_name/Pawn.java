@@ -19,7 +19,6 @@ public class Pawn extends Piece {
         int changeX = nextCol - currentCol;
         int changeY = nextRow - currentRow;
 
-        //white pawn movement
         if (colour == PieceColour.WHITE) {
             if (changeX == 0 && changeY == 1) {
                 for (Piece piece : board.getPieces()) {
@@ -31,7 +30,6 @@ public class Pawn extends Piece {
                 return true;
             }
 
-            //white pawn forward 2 squares
             if (currentRow == 1 && changeX == 0 && changeY == 2) {
                 int middleRow = currentRow + 1;
                 for (Piece piece : board.getPieces()) {
@@ -48,7 +46,6 @@ public class Pawn extends Piece {
                 return true;
             }
 
-            // White capture
             if ((changeX == 1 || changeX == -1) && changeY == 1) {
                 for (Piece piece : board.getPieces()) {
                     if (piece.getColour() == PieceColour.BLACK &&
@@ -58,7 +55,6 @@ public class Pawn extends Piece {
                     }
                 }
 
-                //white en passant capture
                 int enemyRow = currentRow;
                 for (Piece piece : board.getPieces()) {
                     if (piece.getColour() == PieceColour.BLACK && piece instanceof Pawn) {
@@ -75,7 +71,6 @@ public class Pawn extends Piece {
             }
         }
 
-        //black pawn movement
         else {
             if (changeX == 0 && changeY == -1) {
                 for (Piece piece : board.getPieces()) {
@@ -87,7 +82,6 @@ public class Pawn extends Piece {
                 return true;
             }
 
-            //black pawn forward 2 squares
             if (currentRow == 6 && changeX == 0 && changeY == -2) {
                 int middleRow = currentRow - 1;
                 for (Piece piece : board.getPieces()) {
@@ -104,7 +98,6 @@ public class Pawn extends Piece {
                 return true;
             }
 
-            //black capture
             if ((changeX == 1 || changeX == -1) && changeY == -1) {
                 for (Piece piece : board.getPieces()) {
                     if (piece.getColour() == PieceColour.WHITE &&
@@ -114,7 +107,6 @@ public class Pawn extends Piece {
                     }
                 }
 
-                // black en passent
                 int enemyRow = currentRow;
                 for (Piece piece : board.getPieces()) {
                     if (piece.getColour() == PieceColour.WHITE && piece instanceof Pawn) {

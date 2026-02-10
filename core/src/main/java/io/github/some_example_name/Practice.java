@@ -302,622 +302,634 @@ public class Practice {
     }
 
     public boolean click(float x, float y) {
-        if (waitingForClick) {
-            reset();
-            return true;
-        }
+        int col = (int)((x - board.boardX - board.borderOffsetX) / board.squareSize);
+        int row = (int)((y - board.boardY - board.borderOffsetY) / board.squareSize);
 
-        int col = (int) ((x - board.boardX - board.borderOffsetX) / board.squareSize);
-        int row = (int) ((y - board.boardY - board.borderOffsetY) / board.squareSize);
+        if (col >= 0 && col < 8 && row >= 0 && row < 8) {
+            String square = getSquareNotation(col, row);
+            System.out.println("clicked " + square);
 
-        if (col < 0 || col > 7 || row < 0 || row > 7) return false;
+            if (waitingForClick) {
+                reset();
+                return true;
+            }
 
-        if (selectedPiece == null) {
-            if (correctPieceToMove == null) return false;
+            if (selectedPiece == null) {
+                if (correctPieceToMove == null) {
+                    System.out.println("ignored click - wrong piece");
+                    return false;
+                }
 
-            int startCol = correctStartCol;
-            int startRow = correctStartRow;
+                int startCol = correctStartCol;
+                int startRow = correctStartRow;
 
-            if (col == startCol && row == startRow) {
-                int currentCol = (int) ((correctPieceToMove.getX() - board.boardX - board.borderOffsetX) / board.squareSize);
-                int currentRow = (int) ((correctPieceToMove.getY() - board.boardY - board.borderOffsetY) / board.squareSize);
+                if (col == startCol && row == startRow) {
+                    int currentCol = (int)((correctPieceToMove.getX() - board.boardX - board.borderOffsetX) / board.squareSize);
+                    int currentRow = (int)((correctPieceToMove.getY() - board.boardY - board.borderOffsetY) / board.squareSize);
 
-                if (currentCol == startCol && currentRow == startRow) {
-                    selectedPiece = correctPieceToMove;
+                    if (currentCol == startCol && currentRow == startRow) {
+                        selectedPiece = correctPieceToMove;
+                        String pieceType = getPieceType(selectedPiece);
+                        String colour = selectedPiece.getColour() == PieceColour.WHITE ? "white" : "black";
+                        System.out.println("selected " + colour + " " + pieceType);
+                        return true;
+                    }
+                }
+
+                System.out.println("ignored click - wrong piece");
+                return false;
+            }
+
+            int targetCol = correctTargetCol;
+            int targetRow = correctTargetRow;
+
+            if (col != targetCol || row != targetRow) {
+                System.out.println("ignored click - wrong destination");
+                selectedPiece = null;
+                return false;
+            }
+
+            float targetX = board.boardX + board.borderOffsetX + targetCol * board.squareSize;
+            float targetY = board.boardY + board.borderOffsetY + targetRow * board.squareSize;
+
+            boolean moveSuccess = board.tryMove(selectedPiece, targetX, targetY,
+                selectedPiece.getColour() == PieceColour.WHITE);
+
+            if (!moveSuccess) {
+                System.out.println("move failed - illegal move");
+                selectedPiece = null;
+                return false;
+            }
+
+            selectedPiece = null;
+            moveCorrect = true;
+
+            if (difficulty == 1 && easyPositionCounter == 1) {
+                waitingForClick = true;
+                return true;
+            }
+
+            if (difficulty == 1 && easyPositionCounter == 2) {
+                if (step == 0) {
+                    step = 1;
+
+                    Piece blackKing = null;
+                    for (Piece p : board.pieces) {
+                        if (p != null && p.getX() < 1000 &&
+                            p instanceof King &&
+                            p.getColour() == PieceColour.BLACK) {
+                            blackKing = p;
+                            break;
+                        }
+                    }
+
+                    if (blackKing != null) {
+                        int kingTargetCol = 1;
+                        int kingTargetRow = 1;
+                        float tx = board.boardX + board.borderOffsetX + kingTargetCol * board.squareSize;
+                        float ty = board.boardY + board.borderOffsetY + kingTargetRow * board.squareSize;
+                        board.tryMove(blackKing, tx, ty, false);
+                    }
+
+                    correctStartCol = 2;
+                    correctStartRow = 2;
+                    correctTargetCol = 3;
+                    correctTargetRow = 4;
+
+                    correctPieceToMove = null;
+                    for (Piece p : board.pieces) {
+                        if (p != null && p.getX() < 1000) {
+                            int c = (int) ((p.getX() - board.boardX - board.borderOffsetX) / board.squareSize);
+                            int r = (int) ((p.getY() - board.boardY - board.borderOffsetY) / board.squareSize);
+                            if (c == correctStartCol && r == correctStartRow && p.getColour() == PieceColour.WHITE) {
+                                correctPieceToMove = p;
+                                break;
+                            }
+                        }
+                    }
+
+                    moveCorrect = false;
+                    return true;
+                } else if (step == 1) {
+                    waitingForClick = true;
                     return true;
                 }
             }
 
-            return false;
-        }
+            if (difficulty == 1 && easyPositionCounter == 3) {
+                if (step == 0) {
+                    step = 1;
 
-        int targetCol = correctTargetCol;
-        int targetRow = correctTargetRow;
+                    Piece whiteQueen = null;
+                    for (Piece p : board.pieces) {
+                        if (p != null && p.getX() < 1000) {
+                            int c = (int) ((p.getX() - board.boardX - board.borderOffsetX) / board.squareSize);
+                            int r = (int) ((p.getY() - board.boardY - board.borderOffsetY) / board.squareSize);
+                            if (c == 5 && r == 1 && p instanceof Queen && p.getColour() == PieceColour.WHITE) {
+                                whiteQueen = p;
+                                break;
+                            }
+                        }
+                    }
 
-        if (col != targetCol || row != targetRow) {
-            selectedPiece = null;
-            return false;
-        }
+                    if (whiteQueen != null) {
+                        float queenTargetX = board.boardX + board.borderOffsetX + 1 * board.squareSize;
+                        float queenTargetY = board.boardY + board.borderOffsetY + 5 * board.squareSize;
+                        board.tryMove(whiteQueen, queenTargetX, queenTargetY, true);
+                    }
 
-        float targetX = board.boardX + board.borderOffsetX + targetCol * board.squareSize;
-        float targetY = board.boardY + board.borderOffsetY + targetRow * board.squareSize;
+                    correctStartCol = 0;
+                    correctStartRow = 5;
+                    correctTargetCol = 1;
+                    correctTargetRow = 5;
 
-        boolean moveSuccess = board.tryMove(selectedPiece, targetX, targetY,
-            selectedPiece.getColour() == PieceColour.WHITE);
+                    correctPieceToMove = null;
+                    for (Piece p : board.pieces) {
+                        if (p != null && p.getX() < 1000) {
+                            int c = (int) ((p.getX() - board.boardX - board.borderOffsetX) / board.squareSize);
+                            int r = (int) ((p.getY() - board.boardY - board.borderOffsetY) / board.squareSize);
+                            if (c == correctStartCol && r == correctStartRow && p instanceof King && p.getColour() == PieceColour.BLACK) {
+                                correctPieceToMove = p;
+                                break;
+                            }
+                        }
+                    }
 
-        if (!moveSuccess) {
-            selectedPiece = null;
-            return false;
-        }
+                    moveCorrect = false;
+                    return true;
+                } else if (step == 1) {
+                    waitingForClick = true;
+                    return true;
+                }
+            }
 
-        selectedPiece = null;
-        moveCorrect = true;
+            if (difficulty == 2 && mediumPositionCounter == 1) {
+                if (step == 0) {
+                    step = 1;
 
-        if (difficulty == 1 && easyPositionCounter == 1) {
+                    Piece blackKing = null;
+                    for (Piece p : board.pieces) {
+                        if (p != null && p.getX() < 1000 &&
+                            p instanceof King &&
+                            p.getColour() == PieceColour.BLACK) {
+                            blackKing = p;
+                            break;
+                        }
+                    }
+
+                    if (blackKing != null) {
+                        int kingTargetCol = 4;
+                        int kingTargetRow = 5;
+                        float tx = board.boardX + board.borderOffsetX + kingTargetCol * board.squareSize;
+                        float ty = board.boardY + board.borderOffsetY + kingTargetRow * board.squareSize;
+                        board.tryMove(blackKing, tx, ty, false);
+                    }
+
+                    waitingForClick = true;
+                    return true;
+                }
+            }
+
+            if (difficulty == 2 && mediumPositionCounter == 2) {
+                if (step == 0) {
+                    step = 1;
+
+                    Piece whitePawn = null;
+                    for (Piece p : board.pieces) {
+                        if (p != null && p.getX() < 1000) {
+                            int c = (int) ((p.getX() - board.boardX - board.borderOffsetX) / board.squareSize);
+                            int r = (int) ((p.getY() - board.boardY - board.borderOffsetY) / board.squareSize);
+                            if (c == 6 && r == 1 && p instanceof Pawn && p.getColour() == PieceColour.WHITE) {
+                                whitePawn = p;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (whitePawn != null) {
+                        float pawnTargetX = board.boardX + board.borderOffsetX + 6 * board.squareSize;
+                        float pawnTargetY = board.boardY + board.borderOffsetY + 2 * board.squareSize;
+                        board.tryMove(whitePawn, pawnTargetX, pawnTargetY, true);
+                    }
+
+                    correctStartCol = 5;
+                    correctStartRow = 3;
+                    correctTargetCol = 3;
+                    correctTargetRow = 5;
+
+                    correctPieceToMove = null;
+                    for (Piece p : board.pieces) {
+                        if (p != null && p.getX() < 1000) {
+                            int c = (int) ((p.getX() - board.boardX - board.borderOffsetX) / board.squareSize);
+                            int r = (int) ((p.getY() - board.boardY - board.borderOffsetY) / board.squareSize);
+                            if (c == correctStartCol && r == correctStartRow && p instanceof Bishop && p.getColour() == PieceColour.BLACK) {
+                                correctPieceToMove = p;
+                                break;
+                            }
+                        }
+                    }
+
+                    moveCorrect = false;
+                    return true;
+                } else if (step == 1) {
+                    waitingForClick = true;
+                    return true;
+                }
+            }
+
+            if (difficulty == 2 && mediumPositionCounter == 3) {
+                if (step == 0) {
+                    step = 1;
+
+                    Piece blackRook = null;
+                    for (Piece p : board.pieces) {
+                        if (p != null && p.getX() < 1000) {
+                            int c = (int) ((p.getX() - board.boardX - board.borderOffsetX) / board.squareSize);
+                            int r = (int) ((p.getY() - board.boardY - board.borderOffsetY) / board.squareSize);
+                            if (c == 3 && r == 7 && p instanceof Rook && p.getColour() == PieceColour.BLACK) {
+                                blackRook = p;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (blackRook != null) {
+                        float rookTargetX = board.boardX + board.borderOffsetX + 1 * board.squareSize;
+                        float rookTargetY = board.boardY + board.borderOffsetY + 7 * board.squareSize;
+                        board.tryMove(blackRook, rookTargetX, rookTargetY, false);
+                    }
+
+                    correctStartCol = 1;
+                    correctStartRow = 5;
+                    correctTargetCol = 0;
+                    correctTargetRow = 4;
+
+                    correctPieceToMove = null;
+                    for (Piece p : board.pieces) {
+                        if (p != null && p.getX() < 1000) {
+                            int c = (int) ((p.getX() - board.boardX - board.borderOffsetX) / board.squareSize);
+                            int r = (int) ((p.getY() - board.boardY - board.borderOffsetY) / board.squareSize);
+                            if (c == correctStartCol && r == correctStartRow && p instanceof Bishop && p.getColour() == PieceColour.WHITE) {
+                                correctPieceToMove = p;
+                                break;
+                            }
+                        }
+                    }
+
+                    moveCorrect = false;
+                    return true;
+                } else if (step == 1) {
+                    step = 2;
+
+                    Piece blackRook = null;
+                    for (Piece p : board.pieces) {
+                        if (p != null && p.getX() < 1000) {
+                            int c = (int) ((p.getX() - board.boardX - board.borderOffsetX) / board.squareSize);
+                            int r = (int) ((p.getY() - board.boardY - board.borderOffsetY) / board.squareSize);
+                            if (c == 1 && r == 7 && p instanceof Rook && p.getColour() == PieceColour.BLACK) {
+                                blackRook = p;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (blackRook != null) {
+                        float rookTargetX = board.boardX + board.borderOffsetX + 1 * board.squareSize;
+                        float rookTargetY = board.boardY + board.borderOffsetY + 1 * board.squareSize;
+                        board.tryMove(blackRook, rookTargetX, rookTargetY, false);
+                    }
+
+                    correctStartCol = 1;
+                    correctStartRow = 0;
+                    correctTargetCol = 1;
+                    correctTargetRow = 1;
+
+                    correctPieceToMove = null;
+                    for (Piece p : board.pieces) {
+                        if (p != null && p.getX() < 1000) {
+                            int c = (int) ((p.getX() - board.boardX - board.borderOffsetX) / board.squareSize);
+                            int r = (int) ((p.getY() - board.boardY - board.borderOffsetY) / board.squareSize);
+                            if (c == correctStartCol && r == correctStartRow && p instanceof Rook && p.getColour() == PieceColour.WHITE) {
+                                correctPieceToMove = p;
+                                break;
+                            }
+                        }
+                    }
+
+                    moveCorrect = false;
+                    return true;
+                } else if (step == 2) {
+                    waitingForClick = true;
+                    return true;
+                }
+            }
+
+            if (difficulty == 3 && hardPositionCounter == 1) {
+                if (step == 0) {
+                    step = 1;
+
+                    Piece whiteKing = null;
+                    for (Piece p : board.pieces) {
+                        if (p != null && p.getX() < 1000 &&
+                            p instanceof King &&
+                            p.getColour() == PieceColour.WHITE) {
+                            whiteKing = p;
+                            break;
+                        }
+                    }
+
+                    if (whiteKing != null) {
+                        int kingTargetCol = 5;
+                        int kingTargetRow = 3;
+                        float tx = board.boardX + board.borderOffsetX + kingTargetCol * board.squareSize;
+                        float ty = board.boardY + board.borderOffsetY + kingTargetRow * board.squareSize;
+                        board.tryMove(whiteKing, tx, ty, true);
+                    }
+
+                    correctStartCol = 5;
+                    correctStartRow = 6;
+                    correctTargetCol = 5;
+                    correctTargetRow = 5;
+
+                    correctPieceToMove = null;
+                    for (Piece p : board.pieces) {
+                        if (p != null && p.getX() < 1000) {
+                            int c = (int) ((p.getX() - board.boardX - board.borderOffsetX) / board.squareSize);
+                            int r = (int) ((p.getY() - board.boardY - board.borderOffsetY) / board.squareSize);
+                            if (c == correctStartCol && r == correctStartRow && p instanceof King && p.getColour() == PieceColour.BLACK) {
+                                correctPieceToMove = p;
+                                break;
+                            }
+                        }
+                    }
+
+                    moveCorrect = false;
+                    return true;
+                } else if (step == 1) {
+                    step = 2;
+
+                    Piece whiteKing = null;
+                    for (Piece p : board.pieces) {
+                        if (p != null && p.getX() < 1000 &&
+                            p instanceof King &&
+                            p.getColour() == PieceColour.WHITE) {
+                            whiteKing = p;
+                            break;
+                        }
+                    }
+
+                    if (whiteKing != null) {
+                        int kingTargetCol = 6;
+                        int kingTargetRow = 3;
+                        float tx = board.boardX + board.borderOffsetX + kingTargetCol * board.squareSize;
+                        float ty = board.boardY + board.borderOffsetY + kingTargetRow * board.squareSize;
+                        board.tryMove(whiteKing, tx, ty, true);
+                    }
+
+                    correctStartCol = 5;
+                    correctStartRow = 5;
+                    correctTargetCol = 6;
+                    correctTargetRow = 5;
+
+                    correctPieceToMove = null;
+                    for (Piece p : board.pieces) {
+                        if (p != null && p.getX() < 1000) {
+                            int c = (int) ((p.getX() - board.boardX - board.borderOffsetX) / board.squareSize);
+                            int r = (int) ((p.getY() - board.boardY - board.borderOffsetY) / board.squareSize);
+                            if (c == correctStartCol && r == correctStartRow && p instanceof King && p.getColour() == PieceColour.BLACK) {
+                                correctPieceToMove = p;
+                                break;
+                            }
+                        }
+                    }
+
+                    moveCorrect = false;
+                    return true;
+                } else if (step == 2) {
+                    step = 3;
+
+                    Piece whiteKing = null;
+                    for (Piece p : board.pieces) {
+                        if (p != null && p.getX() < 1000 &&
+                            p instanceof King &&
+                            p.getColour() == PieceColour.WHITE) {
+                            whiteKing = p;
+                            break;
+                        }
+                    }
+
+                    if (whiteKing != null) {
+                        int kingTargetCol = 5;
+                        int kingTargetRow = 3;
+                        float tx = board.boardX + board.borderOffsetX + kingTargetCol * board.squareSize;
+                        float ty = board.boardY + board.borderOffsetY + kingTargetRow * board.squareSize;
+                        board.tryMove(whiteKing, tx, ty, true);
+                    }
+
+                    correctStartCol = 6;
+                    correctStartRow = 5;
+                    correctTargetCol = 5;
+                    correctTargetRow = 5;
+
+                    correctPieceToMove = null;
+                    for (Piece p : board.pieces) {
+                        if (p != null && p.getX() < 1000) {
+                            int c = (int) ((p.getX() - board.boardX - board.borderOffsetX) / board.squareSize);
+                            int r = (int) ((p.getY() - board.boardY - board.borderOffsetY) / board.squareSize);
+                            if (c == correctStartCol && r == correctStartRow && p instanceof King && p.getColour() == PieceColour.BLACK) {
+                                correctPieceToMove = p;
+                                break;
+                            }
+                        }
+                    }
+
+                    moveCorrect = false;
+                    return true;
+                } else if (step == 3) {
+                    step = 4;
+
+                    Piece whiteKing = null;
+                    for (Piece p : board.pieces) {
+                        if (p != null && p.getX() < 1000 &&
+                            p instanceof King &&
+                            p.getColour() == PieceColour.WHITE) {
+                            whiteKing = p;
+                            break;
+                        }
+                    }
+
+                    if (whiteKing != null) {
+                        int kingTargetCol = 6;
+                        int kingTargetRow = 3;
+                        float tx = board.boardX + board.borderOffsetX + kingTargetCol * board.squareSize;
+                        float ty = board.boardY + board.borderOffsetY + kingTargetRow * board.squareSize;
+                        board.tryMove(whiteKing, tx, ty, true);
+                    }
+
+                    correctStartCol = 5;
+                    correctStartRow = 5;
+                    correctTargetCol = 6;
+                    correctTargetRow = 5;
+
+                    correctPieceToMove = null;
+                    for (Piece p : board.pieces) {
+                        if (p != null && p.getX() < 1000) {
+                            int c = (int) ((p.getX() - board.boardX - board.borderOffsetX) / board.squareSize);
+                            int r = (int) ((p.getY() - board.boardY - board.borderOffsetY) / board.squareSize);
+                            if (c == correctStartCol && r == correctStartRow && p instanceof King && p.getColour() == PieceColour.BLACK) {
+                                correctPieceToMove = p;
+                                break;
+                            }
+                        }
+                    }
+
+                    moveCorrect = false;
+                    return true;
+                } else if (step == 4) {
+                    waitingForClick = true;
+                    return true;
+                }
+            }
+
+            if (difficulty == 3 && hardPositionCounter == 2) {
+                if (step == 0) {
+                    step = 1;
+
+                    Piece whiteBishop = null;
+                    for (Piece p : board.pieces) {
+                        if (p != null && p.getX() < 1000) {
+                            int c = (int) ((p.getX() - board.boardX - board.borderOffsetX) / board.squareSize);
+                            int r = (int) ((p.getY() - board.boardY - board.borderOffsetY) / board.squareSize);
+                            if (c == 3 && r == 1 && p instanceof Bishop && p.getColour() == PieceColour.WHITE) {
+                                whiteBishop = p;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (whiteBishop != null) {
+                        float bishopTargetX = board.boardX + board.borderOffsetX + 4 * board.squareSize;
+                        float bishopTargetY = board.boardY + board.borderOffsetY + 0 * board.squareSize;
+                        board.tryMove(whiteBishop, bishopTargetX, bishopTargetY, true);
+                    }
+
+                    correctStartCol = 5;
+                    correctStartRow = 4;
+                    correctTargetCol = 5;
+                    correctTargetRow = 2;
+
+                    correctPieceToMove = null;
+                    for (Piece p : board.pieces) {
+                        if (p != null && p.getX() < 1000) {
+                            int c = (int) ((p.getX() - board.boardX - board.borderOffsetX) / board.squareSize);
+                            int r = (int) ((p.getY() - board.boardY - board.borderOffsetY) / board.squareSize);
+                            if (c == correctStartCol && r == correctStartRow && p instanceof Queen && p.getColour() == PieceColour.BLACK) {
+                                correctPieceToMove = p;
+                                break;
+                            }
+                        }
+                    }
+
+                    moveCorrect = false;
+                    return true;
+                } else if (step == 1) {
+                    step = 2;
+
+                    Piece whiteBishop = null;
+                    for (Piece p : board.pieces) {
+                        if (p != null && p.getX() < 1000) {
+                            int c = (int) ((p.getX() - board.boardX - board.borderOffsetX) / board.squareSize);
+                            int r = (int) ((p.getY() - board.boardY - board.borderOffsetY) / board.squareSize);
+                            if (c == 4 && r == 0 && p instanceof Bishop && p.getColour() == PieceColour.WHITE) {
+                                whiteBishop = p;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (whiteBishop != null) {
+                        float bishopTargetX = board.boardX + board.borderOffsetX + 5 * board.squareSize;
+                        float bishopTargetY = board.boardY + board.borderOffsetY + 1 * board.squareSize;
+                        board.tryMove(whiteBishop, bishopTargetX, bishopTargetY, true);
+                    }
+
+                    correctStartCol = 5;
+                    correctStartRow = 2;
+                    correctTargetCol = 5;
+                    correctTargetRow = 1;
+
+                    correctPieceToMove = null;
+                    for (Piece p : board.pieces) {
+                        if (p != null && p.getX() < 1000) {
+                            int c = (int) ((p.getX() - board.boardX - board.borderOffsetX) / board.squareSize);
+                            int r = (int) ((p.getY() - board.boardY - board.borderOffsetY) / board.squareSize);
+                            if (c == correctStartCol && r == correctStartRow && p instanceof Queen && p.getColour() == PieceColour.BLACK) {
+                                correctPieceToMove = p;
+                                break;
+                            }
+                        }
+                    }
+
+                    moveCorrect = false;
+                    return true;
+                } else if (step == 2) {
+                    waitingForClick = true;
+                    return true;
+                }
+            }
+
+            if (difficulty == 3 && hardPositionCounter == 3) {
+                if (step == 0) {
+                    step = 1;
+
+                    Piece whitePawn = null;
+                    for (Piece p : board.pieces) {
+                        if (p != null && p.getX() < 1000) {
+                            int c = (int) ((p.getX() - board.boardX - board.borderOffsetX) / board.squareSize);
+                            int r = (int) ((p.getY() - board.boardY - board.borderOffsetY) / board.squareSize);
+                            if (c == 5 && r == 4 && p instanceof Pawn && p.getColour() == PieceColour.WHITE) {
+                                whitePawn = p;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (whitePawn != null) {
+                        float pawnTargetX = board.boardX + board.borderOffsetX + 6 * board.squareSize;
+                        float pawnTargetY = board.boardY + board.borderOffsetY + 5 * board.squareSize;
+                        board.tryMove(whitePawn, pawnTargetX, pawnTargetY, true);
+                    }
+
+                    correctStartCol = 7;
+                    correctStartRow = 6;
+                    correctTargetCol = 6;
+                    correctTargetRow = 5;
+
+                    correctPieceToMove = null;
+                    for (Piece p : board.pieces) {
+                        if (p != null && p.getX() < 1000) {
+                            int c = (int) ((p.getX() - board.boardX - board.borderOffsetX) / board.squareSize);
+                            int r = (int) ((p.getY() - board.boardY - board.borderOffsetY) / board.squareSize);
+                            if (c == correctStartCol && r == correctStartRow && p instanceof Pawn && p.getColour() == PieceColour.BLACK) {
+                                correctPieceToMove = p;
+                                break;
+                            }
+                        }
+                    }
+
+                    moveCorrect = false;
+                    return true;
+                } else if (step == 1) {
+                    waitingForClick = true;
+                    return true;
+                }
+            }
+
             waitingForClick = true;
             return true;
         }
 
-        if (difficulty == 1 && easyPositionCounter == 2) {
-            if (step == 0) {
-                step = 1;
-
-                Piece blackKing = null;
-                for (Piece p : board.pieces) {
-                    if (p != null && p.getX() < 1000 &&
-                        p instanceof King &&
-                        p.getColour() == PieceColour.BLACK) {
-                        blackKing = p;
-                        break;
-                    }
-                }
-
-                if (blackKing != null) {
-                    int kingTargetCol = 1;
-                    int kingTargetRow = 1;
-                    float tx = board.boardX + board.borderOffsetX + kingTargetCol * board.squareSize;
-                    float ty = board.boardY + board.borderOffsetY + kingTargetRow * board.squareSize;
-                    board.tryMove(blackKing, tx, ty, false);
-                }
-
-                correctStartCol = 2;
-                correctStartRow = 2;
-                correctTargetCol = 3;
-                correctTargetRow = 4;
-
-                correctPieceToMove = null;
-                for (Piece p : board.pieces) {
-                    if (p != null && p.getX() < 1000) {
-                        int c = (int) ((p.getX() - board.boardX - board.borderOffsetX) / board.squareSize);
-                        int r = (int) ((p.getY() - board.boardY - board.borderOffsetY) / board.squareSize);
-                        if (c == correctStartCol && r == correctStartRow && p.getColour() == PieceColour.WHITE) {
-                            correctPieceToMove = p;
-                            break;
-                        }
-                    }
-                }
-
-                moveCorrect = false;
-                return true;
-            } else if (step == 1) {
-                waitingForClick = true;
-                return true;
-            }
-        }
-
-        if (difficulty == 1 && easyPositionCounter == 3) {
-            if (step == 0) {
-                step = 1;
-
-                Piece whiteQueen = null;
-                for (Piece p : board.pieces) {
-                    if (p != null && p.getX() < 1000) {
-                        int c = (int) ((p.getX() - board.boardX - board.borderOffsetX) / board.squareSize);
-                        int r = (int) ((p.getY() - board.boardY - board.borderOffsetY) / board.squareSize);
-                        if (c == 5 && r == 1 && p instanceof Queen && p.getColour() == PieceColour.WHITE) {
-                            whiteQueen = p;
-                            break;
-                        }
-                    }
-                }
-
-                if (whiteQueen != null) {
-                    float queenTargetX = board.boardX + board.borderOffsetX + 1 * board.squareSize;
-                    float queenTargetY = board.boardY + board.borderOffsetY + 5 * board.squareSize;
-                    board.tryMove(whiteQueen, queenTargetX, queenTargetY, true);
-                }
-
-                correctStartCol = 0;
-                correctStartRow = 5;
-                correctTargetCol = 1;
-                correctTargetRow = 5;
-
-                correctPieceToMove = null;
-                for (Piece p : board.pieces) {
-                    if (p != null && p.getX() < 1000) {
-                        int c = (int) ((p.getX() - board.boardX - board.borderOffsetX) / board.squareSize);
-                        int r = (int) ((p.getY() - board.boardY - board.borderOffsetY) / board.squareSize);
-                        if (c == correctStartCol && r == correctStartRow && p instanceof King && p.getColour() == PieceColour.BLACK) {
-                            correctPieceToMove = p;
-                            break;
-                        }
-                    }
-                }
-
-                moveCorrect = false;
-                return true;
-            } else if (step == 1) {
-                waitingForClick = true;
-                return true;
-            }
-        }
-
-        if (difficulty == 2 && mediumPositionCounter == 1) {
-            if (step == 0) {
-                step = 1;
-
-                Piece blackKing = null;
-                for (Piece p : board.pieces) {
-                    if (p != null && p.getX() < 1000 &&
-                        p instanceof King &&
-                        p.getColour() == PieceColour.BLACK) {
-                        blackKing = p;
-                        break;
-                    }
-                }
-
-                if (blackKing != null) {
-                    int kingTargetCol = 4;
-                    int kingTargetRow = 5;
-                    float tx = board.boardX + board.borderOffsetX + kingTargetCol * board.squareSize;
-                    float ty = board.boardY + board.borderOffsetY + kingTargetRow * board.squareSize;
-                    board.tryMove(blackKing, tx, ty, false);
-                }
-
-                waitingForClick = true;
-                return true;
-            }
-        }
-
-        if (difficulty == 2 && mediumPositionCounter == 2) {
-            if (step == 0) {
-                step = 1;
-
-                Piece whitePawn = null;
-                for (Piece p : board.pieces) {
-                    if (p != null && p.getX() < 1000) {
-                        int c = (int) ((p.getX() - board.boardX - board.borderOffsetX) / board.squareSize);
-                        int r = (int) ((p.getY() - board.boardY - board.borderOffsetY) / board.squareSize);
-                        if (c == 6 && r == 1 && p instanceof Pawn && p.getColour() == PieceColour.WHITE) {
-                            whitePawn = p;
-                            break;
-                        }
-                    }
-                }
-
-                if (whitePawn != null) {
-                    float pawnTargetX = board.boardX + board.borderOffsetX + 6 * board.squareSize;
-                    float pawnTargetY = board.boardY + board.borderOffsetY + 2 * board.squareSize;
-                    board.tryMove(whitePawn, pawnTargetX, pawnTargetY, true);
-                }
-
-                correctStartCol = 5;
-                correctStartRow = 3;
-                correctTargetCol = 3;
-                correctTargetRow = 5;
-
-                correctPieceToMove = null;
-                for (Piece p : board.pieces) {
-                    if (p != null && p.getX() < 1000) {
-                        int c = (int) ((p.getX() - board.boardX - board.borderOffsetX) / board.squareSize);
-                        int r = (int) ((p.getY() - board.boardY - board.borderOffsetY) / board.squareSize);
-                        if (c == correctStartCol && r == correctStartRow && p instanceof Bishop && p.getColour() == PieceColour.BLACK) {
-                            correctPieceToMove = p;
-                            break;
-                        }
-                    }
-                }
-
-                moveCorrect = false;
-                return true;
-            } else if (step == 1) {
-                waitingForClick = true;
-                return true;
-            }
-        }
-
-        if (difficulty == 2 && mediumPositionCounter == 3) {
-            if (step == 0) {
-                step = 1;
-
-                Piece blackRook = null;
-                for (Piece p : board.pieces) {
-                    if (p != null && p.getX() < 1000) {
-                        int c = (int) ((p.getX() - board.boardX - board.borderOffsetX) / board.squareSize);
-                        int r = (int) ((p.getY() - board.boardY - board.borderOffsetY) / board.squareSize);
-                        if (c == 3 && r == 7 && p instanceof Rook && p.getColour() == PieceColour.BLACK) {
-                            blackRook = p;
-                            break;
-                        }
-                    }
-                }
-
-                if (blackRook != null) {
-                    float rookTargetX = board.boardX + board.borderOffsetX + 1 * board.squareSize;
-                    float rookTargetY = board.boardY + board.borderOffsetY + 7 * board.squareSize;
-                    board.tryMove(blackRook, rookTargetX, rookTargetY, false);
-                }
-
-                correctStartCol = 1;
-                correctStartRow = 5;
-                correctTargetCol = 0;
-                correctTargetRow = 4;
-
-                correctPieceToMove = null;
-                for (Piece p : board.pieces) {
-                    if (p != null && p.getX() < 1000) {
-                        int c = (int) ((p.getX() - board.boardX - board.borderOffsetX) / board.squareSize);
-                        int r = (int) ((p.getY() - board.boardY - board.borderOffsetY) / board.squareSize);
-                        if (c == correctStartCol && r == correctStartRow && p instanceof Bishop && p.getColour() == PieceColour.WHITE) {
-                            correctPieceToMove = p;
-                            break;
-                        }
-                    }
-                }
-
-                moveCorrect = false;
-                return true;
-            } else if (step == 1) {
-                step = 2;
-
-                Piece blackRook = null;
-                for (Piece p : board.pieces) {
-                    if (p != null && p.getX() < 1000) {
-                        int c = (int) ((p.getX() - board.boardX - board.borderOffsetX) / board.squareSize);
-                        int r = (int) ((p.getY() - board.boardY - board.borderOffsetY) / board.squareSize);
-                        if (c == 1 && r == 7 && p instanceof Rook && p.getColour() == PieceColour.BLACK) {
-                            blackRook = p;
-                            break;
-                        }
-                    }
-                }
-
-                if (blackRook != null) {
-                    float rookTargetX = board.boardX + board.borderOffsetX + 1 * board.squareSize;
-                    float rookTargetY = board.boardY + board.borderOffsetY + 1 * board.squareSize;
-                    board.tryMove(blackRook, rookTargetX, rookTargetY, false);
-                }
-
-                correctStartCol = 1;
-                correctStartRow = 0;
-                correctTargetCol = 1;
-                correctTargetRow = 1;
-
-                correctPieceToMove = null;
-                for (Piece p : board.pieces) {
-                    if (p != null && p.getX() < 1000) {
-                        int c = (int) ((p.getX() - board.boardX - board.borderOffsetX) / board.squareSize);
-                        int r = (int) ((p.getY() - board.boardY - board.borderOffsetY) / board.squareSize);
-                        if (c == correctStartCol && r == correctStartRow && p instanceof Rook && p.getColour() == PieceColour.WHITE) {
-                            correctPieceToMove = p;
-                            break;
-                        }
-                    }
-                }
-
-                moveCorrect = false;
-                return true;
-            } else if (step == 2) {
-                waitingForClick = true;
-                return true;
-            }
-        }
-
-        if (difficulty == 3 && hardPositionCounter == 1) {
-            if (step == 0) {
-                step = 1;
-
-                Piece whiteKing = null;
-                for (Piece p : board.pieces) {
-                    if (p != null && p.getX() < 1000 &&
-                        p instanceof King &&
-                        p.getColour() == PieceColour.WHITE) {
-                        whiteKing = p;
-                        break;
-                    }
-                }
-
-                if (whiteKing != null) {
-                    int kingTargetCol = 5;
-                    int kingTargetRow = 3;
-                    float tx = board.boardX + board.borderOffsetX + kingTargetCol * board.squareSize;
-                    float ty = board.boardY + board.borderOffsetY + kingTargetRow * board.squareSize;
-                    board.tryMove(whiteKing, tx, ty, true);
-                }
-
-                correctStartCol = 5;
-                correctStartRow = 6;
-                correctTargetCol = 5;
-                correctTargetRow = 5;
-
-                correctPieceToMove = null;
-                for (Piece p : board.pieces) {
-                    if (p != null && p.getX() < 1000) {
-                        int c = (int) ((p.getX() - board.boardX - board.borderOffsetX) / board.squareSize);
-                        int r = (int) ((p.getY() - board.boardY - board.borderOffsetY) / board.squareSize);
-                        if (c == correctStartCol && r == correctStartRow && p instanceof King && p.getColour() == PieceColour.BLACK) {
-                            correctPieceToMove = p;
-                            break;
-                        }
-                    }
-                }
-
-                moveCorrect = false;
-                return true;
-            } else if (step == 1) {
-                step = 2;
-
-                Piece whiteKing = null;
-                for (Piece p : board.pieces) {
-                    if (p != null && p.getX() < 1000 &&
-                        p instanceof King &&
-                        p.getColour() == PieceColour.WHITE) {
-                        whiteKing = p;
-                        break;
-                    }
-                }
-
-                if (whiteKing != null) {
-                    int kingTargetCol = 6;
-                    int kingTargetRow = 3;
-                    float tx = board.boardX + board.borderOffsetX + kingTargetCol * board.squareSize;
-                    float ty = board.boardY + board.borderOffsetY + kingTargetRow * board.squareSize;
-                    board.tryMove(whiteKing, tx, ty, true);
-                }
-
-                correctStartCol = 5;
-                correctStartRow = 5;
-                correctTargetCol = 6;
-                correctTargetRow = 5;
-
-                correctPieceToMove = null;
-                for (Piece p : board.pieces) {
-                    if (p != null && p.getX() < 1000) {
-                        int c = (int) ((p.getX() - board.boardX - board.borderOffsetX) / board.squareSize);
-                        int r = (int) ((p.getY() - board.boardY - board.borderOffsetY) / board.squareSize);
-                        if (c == correctStartCol && r == correctStartRow && p instanceof King && p.getColour() == PieceColour.BLACK) {
-                            correctPieceToMove = p;
-                            break;
-                        }
-                    }
-                }
-
-                moveCorrect = false;
-                return true;
-            } else if (step == 2) {
-                step = 3;
-
-                Piece whiteKing = null;
-                for (Piece p : board.pieces) {
-                    if (p != null && p.getX() < 1000 &&
-                        p instanceof King &&
-                        p.getColour() == PieceColour.WHITE) {
-                        whiteKing = p;
-                        break;
-                    }
-                }
-
-                if (whiteKing != null) {
-                    int kingTargetCol = 5;
-                    int kingTargetRow = 3;
-                    float tx = board.boardX + board.borderOffsetX + kingTargetCol * board.squareSize;
-                    float ty = board.boardY + board.borderOffsetY + kingTargetRow * board.squareSize;
-                    board.tryMove(whiteKing, tx, ty, true);
-                }
-
-                correctStartCol = 6;
-                correctStartRow = 5;
-                correctTargetCol = 5;
-                correctTargetRow = 5;
-
-                correctPieceToMove = null;
-                for (Piece p : board.pieces) {
-                    if (p != null && p.getX() < 1000) {
-                        int c = (int) ((p.getX() - board.boardX - board.borderOffsetX) / board.squareSize);
-                        int r = (int) ((p.getY() - board.boardY - board.borderOffsetY) / board.squareSize);
-                        if (c == correctStartCol && r == correctStartRow && p instanceof King && p.getColour() == PieceColour.BLACK) {
-                            correctPieceToMove = p;
-                            break;
-                        }
-                    }
-                }
-
-                moveCorrect = false;
-                return true;
-            } else if (step == 3) {
-                step = 4;
-
-                Piece whiteKing = null;
-                for (Piece p : board.pieces) {
-                    if (p != null && p.getX() < 1000 &&
-                        p instanceof King &&
-                        p.getColour() == PieceColour.WHITE) {
-                        whiteKing = p;
-                        break;
-                    }
-                }
-
-                if (whiteKing != null) {
-                    int kingTargetCol = 6;
-                    int kingTargetRow = 3;
-                    float tx = board.boardX + board.borderOffsetX + kingTargetCol * board.squareSize;
-                    float ty = board.boardY + board.borderOffsetY + kingTargetRow * board.squareSize;
-                    board.tryMove(whiteKing, tx, ty, true);
-                }
-
-                correctStartCol = 5;
-                correctStartRow = 5;
-                correctTargetCol = 6;
-                correctTargetRow = 5;
-
-                correctPieceToMove = null;
-                for (Piece p : board.pieces) {
-                    if (p != null && p.getX() < 1000) {
-                        int c = (int) ((p.getX() - board.boardX - board.borderOffsetX) / board.squareSize);
-                        int r = (int) ((p.getY() - board.boardY - board.borderOffsetY) / board.squareSize);
-                        if (c == correctStartCol && r == correctStartRow && p instanceof King && p.getColour() == PieceColour.BLACK) {
-                            correctPieceToMove = p;
-                            break;
-                        }
-                    }
-                }
-
-                moveCorrect = false;
-                return true;
-            } else if (step == 4) {
-                waitingForClick = true;
-                return true;
-            }
-        }
-
-        if (difficulty == 3 && hardPositionCounter == 2) {
-            if (step == 0) {
-                step = 1;
-
-                Piece whiteBishop = null;
-                for (Piece p : board.pieces) {
-                    if (p != null && p.getX() < 1000) {
-                        int c = (int) ((p.getX() - board.boardX - board.borderOffsetX) / board.squareSize);
-                        int r = (int) ((p.getY() - board.boardY - board.borderOffsetY) / board.squareSize);
-                        if (c == 3 && r == 1 && p instanceof Bishop && p.getColour() == PieceColour.WHITE) {
-                            whiteBishop = p;
-                            break;
-                        }
-                    }
-                }
-
-                if (whiteBishop != null) {
-                    float bishopTargetX = board.boardX + board.borderOffsetX + 4 * board.squareSize;
-                    float bishopTargetY = board.boardY + board.borderOffsetY + 0 * board.squareSize;
-                    board.tryMove(whiteBishop, bishopTargetX, bishopTargetY, true);
-                }
-
-                correctStartCol = 5;
-                correctStartRow = 4;
-                correctTargetCol = 5;
-                correctTargetRow = 2;
-
-                correctPieceToMove = null;
-                for (Piece p : board.pieces) {
-                    if (p != null && p.getX() < 1000) {
-                        int c = (int) ((p.getX() - board.boardX - board.borderOffsetX) / board.squareSize);
-                        int r = (int) ((p.getY() - board.boardY - board.borderOffsetY) / board.squareSize);
-                        if (c == correctStartCol && r == correctStartRow && p instanceof Queen && p.getColour() == PieceColour.BLACK) {
-                            correctPieceToMove = p;
-                            break;
-                        }
-                    }
-                }
-
-                moveCorrect = false;
-                return true;
-            } else if (step == 1) {
-                step = 2;
-
-                Piece whiteBishop = null;
-                for (Piece p : board.pieces) {
-                    if (p != null && p.getX() < 1000) {
-                        int c = (int) ((p.getX() - board.boardX - board.borderOffsetX) / board.squareSize);
-                        int r = (int) ((p.getY() - board.boardY - board.borderOffsetY) / board.squareSize);
-                        if (c == 4 && r == 0 && p instanceof Bishop && p.getColour() == PieceColour.WHITE) {
-                            whiteBishop = p;
-                            break;
-                        }
-                    }
-                }
-
-                if (whiteBishop != null) {
-                    float bishopTargetX = board.boardX + board.borderOffsetX + 5 * board.squareSize;
-                    float bishopTargetY = board.boardY + board.borderOffsetY + 1 * board.squareSize;
-                    board.tryMove(whiteBishop, bishopTargetX, bishopTargetY, true);
-                }
-
-                correctStartCol = 5;
-                correctStartRow = 2;
-                correctTargetCol = 5;
-                correctTargetRow = 1;
-
-                correctPieceToMove = null;
-                for (Piece p : board.pieces) {
-                    if (p != null && p.getX() < 1000) {
-                        int c = (int) ((p.getX() - board.boardX - board.borderOffsetX) / board.squareSize);
-                        int r = (int) ((p.getY() - board.boardY - board.borderOffsetY) / board.squareSize);
-                        if (c == correctStartCol && r == correctStartRow && p instanceof Queen && p.getColour() == PieceColour.BLACK) {
-                            correctPieceToMove = p;
-                            break;
-                        }
-                    }
-                }
-
-                moveCorrect = false;
-                return true;
-            } else if (step == 2) {
-                waitingForClick = true;
-                return true;
-            }
-        }
-
-        if (difficulty == 3 && hardPositionCounter == 3) {
-            if (step == 0) {
-                step = 1;
-
-                // Auto: White pawn f5 (5,4) takes pawn g6 (6,5)
-                Piece whitePawn = null;
-                for (Piece p : board.pieces) {
-                    if (p != null && p.getX() < 1000) {
-                        int c = (int) ((p.getX() - board.boardX - board.borderOffsetX) / board.squareSize);
-                        int r = (int) ((p.getY() - board.boardY - board.borderOffsetY) / board.squareSize);
-                        if (c == 5 && r == 4 && p instanceof Pawn && p.getColour() == PieceColour.WHITE) {
-                            whitePawn = p;
-                            break;
-                        }
-                    }
-                }
-
-                if (whitePawn != null) {
-                    float pawnTargetX = board.boardX + board.borderOffsetX + 6 * board.squareSize;
-                    float pawnTargetY = board.boardY + board.borderOffsetY + 5 * board.squareSize;
-                    board.tryMove(whitePawn, pawnTargetX, pawnTargetY, true);
-                }
-
-                // Next move: Black pawn h7 (7,6) takes pawn g6 (6,5)
-                correctStartCol = 7;
-                correctStartRow = 6;
-                correctTargetCol = 6;
-                correctTargetRow = 5;
-
-                correctPieceToMove = null;
-                for (Piece p : board.pieces) {
-                    if (p != null && p.getX() < 1000) {
-                        int c = (int) ((p.getX() - board.boardX - board.borderOffsetX) / board.squareSize);
-                        int r = (int) ((p.getY() - board.boardY - board.borderOffsetY) / board.squareSize);
-                        if (c == correctStartCol && r == correctStartRow && p instanceof Pawn && p.getColour() == PieceColour.BLACK) {
-                            correctPieceToMove = p;
-                            break;
-                        }
-                    }
-                }
-
-                moveCorrect = false;
-                return true;
-            } else if (step == 1) {
-                waitingForClick = true;
-                return true;
-            }
-        }
-
-        waitingForClick = true;
-        return true;
+        return false;
     }
 
     public void draw(SpriteBatch batch) {
@@ -930,6 +942,22 @@ public class Practice {
 
     public boolean isMoveCorrect() {
         return moveCorrect;
+    }
+
+    private String getSquareNotation(int col, int row) {
+        char colChar = (char)('A' + col);
+        int displayRow = row + 1;
+        return "" + colChar + displayRow;
+    }
+
+    private String getPieceType(Piece piece) {
+        if (piece instanceof Pawn) return "pawn";
+        if (piece instanceof Knight) return "knight";
+        if (piece instanceof Bishop) return "bishop";
+        if (piece instanceof Rook) return "rook";
+        if (piece instanceof Queen) return "queen";
+        if (piece instanceof King) return "king";
+        return "unknown";
     }
 
     public void reset() {

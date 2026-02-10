@@ -28,7 +28,6 @@ public class Rook extends Piece {
             return false;
         }
 
-        // in between
         int stepX = 0;
         int stepY = 0;
         if (changeX > 0) stepX = 1;
@@ -53,10 +52,9 @@ public class Rook extends Piece {
             checkCol = checkCol + stepX;
             checkRow = checkRow + stepY;
         }
-
-        // next square
+        
         for (Piece piece : board.getPieces()) {
-            if (piece.getX() < 1000) { // Only check pieces on board
+            if (piece.getX() < 1000) {
                 int pieceCol = (int)((piece.getX() - board.boardX - board.borderOffsetX) / board.squareSize);
                 int pieceRow = (int)((piece.getY() - board.boardY - board.borderOffsetY) / board.squareSize);
 

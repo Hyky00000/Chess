@@ -290,7 +290,11 @@ public class Board {
             }
 
             if (piece instanceof King) {
-                handleCastling((King) piece, oldX, snapX);
+                King king = (King) piece;
+                if (!king.hasMoved) {
+                    handleCastling(king, oldX, snapX);
+                }
+                king.hasMoved = true;
             }
 
             if (piece instanceof Rook) {
@@ -497,7 +501,6 @@ public class Board {
         }
 
         if (!whiteHasOtherPieces && !blackHasOtherPieces) {
-            // King + Bishop vs King
             if (whitePieceCount == 2 && blackPieceCount == 1 && whiteBishops == 1) return true;
             if (blackPieceCount == 2 && whitePieceCount == 1 && blackBishops == 1) return true;
 
@@ -756,7 +759,8 @@ public class Board {
 
         boolean attacksQueen = false;
         for (Piece opponentPiece : pieces) {
-            if (opponentPiece != null && opponentPiece.getColour() != aiColour && opponentPiece.getX() < 1000 && opponentPiece instanceof Queen) {
+            if (opponentPiece != null && opponentPiece.getColour() != aiColour &&
+                opponentPiece.getX() < 1000 && opponentPiece instanceof Queen) {
                 if (piece.isValidMove(opponentPiece.getX(), opponentPiece.getY(), this)) {
                     attacksQueen = true;
                     break;
@@ -797,17 +801,30 @@ public class Board {
         return true;
     }
 
-    public int evaluateMove(Move move, PieceColour aiColour) {
+    public MoveWithScore evaluateMove(Move move, PieceColour aiColour) {
         int score = 0;
         Piece piece = move.piece;
+        StringBuilder details = new StringBuilder();
+
+        float currentX = piece.getX();
+        float currentY = piece.getY();
+        boolean pieceCurrentlyAttacked = isSquareAttacked(currentX, currentY, aiColour);
+
+        if (pieceCurrentlyAttacked) {
+            score = score + 50000;
+            details.append("piece currently attacked +50000, ");
+        }
 
         if (move.capturedPiece != null) {
             int pieceValue = getPieceValue(move.capturedPiece);
-            score = score + (pieceValue * 25);
+            score = score + (pieceValue * 35);
+            details.append("capture +" + (pieceValue * 35) + ", ");
 
             int ourPieceValue = getPieceValue(piece);
             if (ourPieceValue < pieceValue) {
-                score = score + (pieceValue - ourPieceValue) * 20;
+                int bonus = (pieceValue - ourPieceValue) * 40;
+                score = score + bonus;
+                details.append("good trade +" + bonus + ", ");
             }
         }
 
@@ -816,9 +833,11 @@ public class Board {
             int ourPieceValue = getPieceValue(piece);
             boolean isDefended = isSquareDefended(move.targetX, move.targetY, aiColour);
             if (isDefended) {
-                score -= (ourPieceValue * 75);
+                score = score - 100000;
+                details.append("hanging piece -100000 (but defended), ");
             } else {
-                score -= (ourPieceValue * 300);
+                score = score - 1000000;
+                details.append("hanging piece -1000000, ");
             }
         }
 
@@ -850,9 +869,11 @@ public class Board {
 
             if (canBeRecaptured) {
                 if (ourPieceValue > smallestRecapturerValue) {
-                    score -= (ourPieceValue - smallestRecapturerValue) * 250;
+                    score = score - 500000;
+                    details.append("bad recapture -500000, ");
                 } else if (ourPieceValue == smallestRecapturerValue) {
-                    score -= 75;
+                    score = score - 200000;
+                    details.append("equal recapture -200000, ");
                 }
             }
         }
@@ -869,7 +890,8 @@ public class Board {
 
         PieceColour opponentColour = (aiColour == PieceColour.WHITE) ? PieceColour.BLACK : PieceColour.WHITE;
         if (isKingInCheck(opponentColour)) {
-            score = score + 40;
+            score = score + 60;
+            details.append("check +60, ");
         }
 
         piece.setX(oldX);
@@ -878,32 +900,115 @@ public class Board {
             tempCaptured.setX(move.targetX);
         }
 
-        boolean squareIsAttacked = isSquareAttacked(move.targetX, move.targetY, aiColour);
-        if (squareIsAttacked) {
+        boolean newSquareAttacked = isSquareAttacked(move.targetX, move.targetY, aiColour);
+        boolean newSquareDefended = isSquareDefended(move.targetX, move.targetY, aiColour);
+
+        if (newSquareAttacked) {
             int attackerValue = findSmallestAttackerValue(move.targetX, move.targetY, aiColour);
             int ourPieceValue = getPieceValue(piece);
 
             if (ourPieceValue > attackerValue) {
-                score -= (ourPieceValue - attackerValue) * 40;
+                if (pieceCurrentlyAttacked) {
+                    score = score - 1000;
+                    details.append("bad move from attacked square -1000, ");
+                } else {
+                    score = score - 5000000;
+                    details.append("piece to attacked square -5000000, ");
+                }
             } else if (ourPieceValue == attackerValue) {
-                score -= 10;
+                if (pieceCurrentlyAttacked) {
+                    score = score - 500;
+                    details.append("equal trade from attacked square -500, ");
+                } else {
+                    score = score - 10000;
+                    details.append("equal piece to attacked square -10000, ");
+                }
+            } else if (ourPieceValue < attackerValue) {
+                if (pieceCurrentlyAttacked) {
+                    score = score + 2000;
+                    details.append("good escape +2000, ");
+                }
             }
+        }
+
+        if (!newSquareAttacked && pieceCurrentlyAttacked) {
+            score = score + 100000;
+            details.append("escape from attack +100000, ");
         }
 
         boolean attacksQueen = attacksOpponentQueen(piece, move.targetX, move.targetY, aiColour);
         if (attacksQueen) {
-            score = score + 35;
+            score = score + 80;
+            details.append("attacks queen +80, ");
         }
 
-        boolean createsThreat = createsNewThreat(piece, move.targetX, move.targetY, aiColour);
-        if (createsThreat) {
-            score += 20;
+        float oldX2 = piece.getX();
+        float oldY2 = piece.getY();
+        piece.setX(move.targetX);
+        piece.setY(move.targetY);
+
+        for (Piece opponentPiece : pieces) {
+            if (opponentPiece != null && opponentPiece.getColour() != aiColour && opponentPiece.getX() < 1000) {
+                if (piece.isValidMove(opponentPiece.getX(), opponentPiece.getY(), this)) {
+                    int targetValue = getPieceValue(opponentPiece);
+                    boolean isDefended = isSquareDefended(opponentPiece.getX(), opponentPiece.getY(), opponentPiece.getColour());
+
+                    if (!isDefended) {
+                        score = score + targetValue * 15;
+                        details.append("attacks undefended piece +" + (targetValue * 15) + ", ");
+                    } else {
+                        score = score + targetValue * 5;
+                        details.append("attacks defended piece +" + (targetValue * 5) + ", ");
+                    }
+                }
+            }
         }
+
+        piece.setX(oldX2);
+        piece.setY(oldY2);
 
         int col = (int)((move.targetX - boardX - borderOffsetX) / squareSize);
         int row = (int)((move.targetY - boardY - borderOffsetY) / squareSize);
-        if (col == 0 || col == 7 || row == 0 || row == 7) {
-            score = score - 5;
+
+        if (!newSquareAttacked) {
+            if ((col == 3 || col == 4) && (row == 3 || row == 4)) {
+                score = score + 25;
+                details.append("center control +25, ");
+            }
+            else if (col >= 2 && col <= 5 && row >= 2 && row <= 5) {
+                score = score + 15;
+                details.append("near center +15, ");
+            }
+            else if (col == 0 || col == 7 || row == 0 || row == 7) {
+                score = score - 20;
+                details.append("edge square -20, ");
+            }
+        }
+
+        if (piece instanceof Knight) {
+            if (col == 0 || col == 7 || row == 0 || row == 7) {
+                score = score - 40;
+                details.append("knight on edge -40, ");
+            }
+            if ((col == 0 || col == 7) && (row == 0 || row == 7)) {
+                score = score - 60;
+                details.append("knight in corner -60, ");
+            }
+            if (!newSquareAttacked && col >= 2 && col <= 5 && row >= 2 && row <= 5) {
+                score = score + 30;
+                details.append("knight in center +30, ");
+            }
+        }
+
+        if (piece instanceof Bishop) {
+            if (col == 0 || col == 7 || row == 0 || row == 7) {
+                score = score - 15;
+                details.append("bishop on edge -15, ");
+            }
+            if (col == row || col == (7 - row)) {
+                score = score + 10;
+                details.append("bishop on diagonal +10, ");
+            }
         }
 
         boolean earlyGame = isEarlyGame();
@@ -914,12 +1019,75 @@ public class Board {
                 int newCol = (int)((move.targetX - boardX - borderOffsetX) / squareSize);
                 int newRow = (int)((move.targetY - boardY - borderOffsetY) / squareSize);
 
-                if (newCol >= 2 && newCol <= 5 && newRow >= 2 && newRow <= 5) {
-                    score = score + 5;
+                int oldDistanceToCenter = Math.abs(currentCol - 3) + Math.abs(currentCol - 4) +
+                    Math.abs(currentRow - 3) + Math.abs(currentRow - 4);
+                int newDistanceToCenter = Math.abs(newCol - 3) + Math.abs(newCol - 4) +
+                    Math.abs(newRow - 3) + Math.abs(newRow - 4);
+
+                if (newDistanceToCenter < oldDistanceToCenter) {
+                    score = score + 20;
+                    details.append("toward center +20, ");
                 }
 
                 if ((piece instanceof Knight || piece instanceof Bishop) && currentRow <= 1) {
-                    score = score + 3;
+                    score = score + 15;
+                    details.append("minor piece development +15, ");
+                }
+
+                if (piece instanceof Queen && earlyGame) {
+                    score = score - 10;
+                    details.append("queen early -10, ");
+                }
+            }
+        } else {
+            if (piece instanceof Knight || piece instanceof Bishop) {
+                int supportingPieces = 0;
+                for (Piece ourPiece : pieces) {
+                    if (ourPiece != null && ourPiece != piece && ourPiece.getColour() == aiColour && ourPiece.getX() < 1000) {
+                        int dist = Math.abs(col - (int)((ourPiece.getX() - boardX - borderOffsetX) / squareSize)) +
+                            Math.abs(row - (int)((ourPiece.getY() - boardY - borderOffsetY) / squareSize));
+                        if (dist <= 2) {
+                            supportingPieces++;
+                        }
+                    }
+                }
+                score += supportingPieces * 10;
+                if (supportingPieces > 0) {
+                    details.append("piece support +" + (supportingPieces * 10) + ", ");
+                }
+            }
+
+            if (piece instanceof Pawn && !earlyGame) {
+                boolean hasFriendlyPawnAdjacent = false;
+                for (Piece p : pieces) {
+                    if (p != null && p instanceof Pawn && p.getColour() == aiColour && p.getX() < 1000 && p != piece) {
+                        int pCol = (int)((p.getX() - boardX - borderOffsetX) / squareSize);
+                        if (Math.abs(pCol - col) == 1) {
+                            hasFriendlyPawnAdjacent = true;
+                            break;
+                        }
+                    }
+                }
+                if (!hasFriendlyPawnAdjacent) {
+                    score -= 30;
+                    details.append("isolated pawn -30, ");
+                }
+            }
+
+            if (piece instanceof Rook && !earlyGame) {
+                boolean hasPawnOnFile = false;
+                for (Piece p : pieces) {
+                    if (p != null && p instanceof Pawn && p.getColour() == aiColour && p.getX() < 1000) {
+                        int pCol = (int)((p.getX() - boardX - borderOffsetX) / squareSize);
+                        if (pCol == col) {
+                            hasPawnOnFile = true;
+                            break;
+                        }
+                    }
+                }
+                if (!hasPawnOnFile) {
+                    score += 40;
+                    details.append("rook on open file +40, ");
                 }
             }
         }
@@ -927,32 +1095,127 @@ public class Board {
         if (piece instanceof King) {
             King kingPiece = (King) piece;
             if (!kingPiece.hasMoved && earlyGame) {
-                score = score - 5;
+                score = score - 15;
+                details.append("king unmoved in opening -15, ");
+            }
+
+            if (!earlyGame) {
+                int piecesOnBoard = 0;
+                for (Piece p : pieces) {
+                    if (p != null && p.getX() < 1000) {
+                        piecesOnBoard++;
+                    }
+                }
+                if (piecesOnBoard > 20) {
+                    if (col >= 3 && col <= 4 && row >= 3 && row <= 4) {
+                        score -= 50;
+                        details.append("king too exposed -50, ");
+                    }
+                }
             }
         }
-
-        int activityBonus = calculateActivityBonus(piece, move.targetX, move.targetY);
-        score = score + activityBonus;
 
         if (piece instanceof Pawn) {
             row = (int)((move.targetY - boardY - borderOffsetY) / squareSize);
             if (aiColour == PieceColour.WHITE && row > 3) {
-                score = score + 2;
+                score = score + 5;
+                details.append("pawn advance +5, ");
             }
             if (aiColour == PieceColour.BLACK && row < 4) {
-                score = score + 2;
+                score = score + 5;
+                details.append("pawn advance +5, ");
             }
 
             if (isPassedPawn(piece, move.targetX, move.targetY, aiColour)) {
-                score = score + 15;
+                score = score + 30;
+                details.append("passed pawn +30, ");
+
+                if (aiColour == PieceColour.WHITE && row >= 5) {
+                    score = score + row * 5;
+                    details.append("advanced passed pawn +" + (row * 5) + ", ");
+                }
+                if (aiColour == PieceColour.BLACK && row <= 2) {
+                    score = score + (7 - row) * 5;
+                    details.append("advanced passed pawn +" + ((7 - row) * 5) + ", ");
+                }
+            }
+
+            int pawnsInColumn = 0;
+            for (Piece p : pieces) {
+                if (p != null && p instanceof Pawn && p.getColour() == aiColour && p.getX() < 1000) {
+                    int pCol = (int)((p.getX() - boardX - borderOffsetX) / squareSize);
+                    if (pCol == col && p != piece) {
+                        pawnsInColumn = pawnsInColumn + 1;
+                    }
+                }
+            }
+            if (pawnsInColumn > 0) {
+                score = score - pawnsInColumn * 10;
+                details.append("doubled pawns -" + (pawnsInColumn * 10) + ", ");
             }
         }
-        if (squareIsAttacked && !isSquareDefended(move.targetX, move.targetY, aiColour)) {
-            score = score - 1000;
-        }
-        return score;
-    }
 
+        if (piece instanceof Rook) {
+            boolean openFile = true;
+            for (Piece p : pieces) {
+                if (p != null && p instanceof Pawn && p.getColour() == aiColour && p.getX() < 1000) {
+                    int pCol = (int)((p.getX() - boardX - borderOffsetX) / squareSize);
+                    if (pCol == col) {
+                        openFile = false;
+                        break;
+                    }
+                }
+            }
+            if (openFile) {
+                score = score + 25;
+                details.append("rook on open file +25, ");
+            }
+        }
+
+        if (!earlyGame && move.capturedPiece == null && !(piece instanceof Pawn)) {
+            float tempX = piece.getX();
+            float tempY = piece.getY();
+            piece.setX(move.targetX);
+            piece.setY(move.targetY);
+
+            int bestOpponentCapture = 0;
+            java.util.ArrayList<Move> opponentMoves = getAllLegalMoves(opponentColour);
+            for (Move oppMove : opponentMoves) {
+                if (oppMove.capturedPiece != null) {
+                    int captureValue = getPieceValue(oppMove.capturedPiece);
+                    if (captureValue > bestOpponentCapture) {
+                        bestOpponentCapture = captureValue;
+                    }
+                }
+            }
+
+            piece.setX(tempX);
+            piece.setY(tempY);
+
+            if (bestOpponentCapture > 0) {
+                score -= bestOpponentCapture * 20;
+                details.append("opponent threat -" + (bestOpponentCapture * 20) + ", ");
+            }
+        }
+
+        int activityBonus = calculateActivityBonus(piece, move.targetX, move.targetY);
+        score = score + activityBonus * 2;
+        if (activityBonus > 0) {
+            details.append("activity bonus +" + (activityBonus * 2) + ", ");
+        }
+
+        if (newSquareAttacked && !newSquareDefended) {
+            if (pieceCurrentlyAttacked) {
+                score = score - 50000;
+                details.append("moving attacked piece to undefended square -50000, ");
+            } else {
+                score = score - 5000000;
+                details.append("moving to attacked undefended square -5000000, ");
+            }
+        }
+
+        return new MoveWithScore(move, score, details.toString());
+    }
     private int getPieceValue(Piece piece) {
         if (piece instanceof Pawn) {
             return 1;
@@ -1017,13 +1280,29 @@ public class Board {
         int col = (int)((targetX - boardX - borderOffsetX) / squareSize);
         int row = (int)((targetY - boardY - borderOffsetY) / squareSize);
 
-        if (col >= 3 && col <= 4 && row >= 3 && row <= 4) {
-            bonus = bonus + 3;
+        if (col >= 2 && col <= 5 && row >= 2 && row <= 5) {
+            bonus = bonus + 5;
+        }
+        if ((col == 3 || col == 4) && (row == 3 || row == 4)) {
+            bonus = bonus + 10;
+        }
+
+        if (piece instanceof Knight) {
+            if (col >= 2 && col <= 5 && row >= 2 && row <= 5) {
+                bonus += 15;
+            }
+        }
+
+        if (piece instanceof Bishop) {
+            if (col == row || col == (7 - row)) {
+                bonus += 10;
+            }
         }
 
         if (piece instanceof Rook) {
-            if (col == 0 || col == 7) {
-                bonus = bonus + 1;
+            if ((piece.getColour() == PieceColour.WHITE && row > 0) ||
+                (piece.getColour() == PieceColour.BLACK && row < 7)) {
+                bonus += 5;
             }
         }
 
@@ -1041,30 +1320,16 @@ public class Board {
 
         for (int i = 0; i < legalMoves.size(); i++) {
             Move move = legalMoves.get(i);
-            int score = evaluateMove(move, colour);
-            movesWithScores.add(new MoveWithScore(move, score));
+            MoveWithScore moveWithScore = evaluateMove(move, colour);
+            movesWithScores.add(moveWithScore);
         }
 
         for (int i = 0; i < movesWithScores.size() - 1; i++) {
             for (int j = 0; j < movesWithScores.size() - i - 1; j++) {
-                MoveWithScore first = movesWithScores.get(j);
-                MoveWithScore second = movesWithScores.get(j + 1);
-
-                if (first.score < second.score) {
-                    movesWithScores.set(j, second);
-                    movesWithScores.set(j + 1, first);
-                }
-            }
-        }
-
-        if (movesWithScores.size() >= 5) {
-            for (int i = 0; i < 3; i++) {
-                int index1 = i;
-                int index2 = i + 1 + (int)(Math.random() * 2);
-                if (index2 < 5) {
-                    MoveWithScore temp = movesWithScores.get(index1);
-                    movesWithScores.set(index1, movesWithScores.get(index2));
-                    movesWithScores.set(index2, temp);
+                if (movesWithScores.get(j).score < movesWithScores.get(j + 1).score) {
+                    MoveWithScore temp = movesWithScores.get(j);
+                    movesWithScores.set(j, movesWithScores.get(j + 1));
+                    movesWithScores.set(j + 1, temp);
                 }
             }
         }
@@ -1183,17 +1448,58 @@ public class Board {
             this.targetY = targetY;
             this.capturedPiece = capturedPiece;
         }
-    }
 
-    private class MoveWithScore {
-        public Move move;
-        public int score;
-
-        public MoveWithScore(Move move, int score) {
-            this.move = move;
-            this.score = score;
+        public String toString() {
+            int fromCol = (int)((piece.getX() - boardX - borderOffsetX) / squareSize);
+            int fromRow = (int)((piece.getY() - boardY - borderOffsetY) / squareSize);
+            int toCol = (int)((targetX - boardX - borderOffsetX) / squareSize);
+            int toRow = (int)((targetY - boardY - borderOffsetY) / squareSize);
+            char fromColChar = (char)('A' + fromCol);
+            char toColChar = (char)('A' + toCol);
+            int fromRowNum = fromRow + 1;
+            int toRowNum = toRow + 1;
+            return fromColChar + "" + fromRowNum + " to " + toColChar + "" + toRowNum;
         }
     }
 
+    public class MoveWithScore {
+        public String details;
+        public Move move;
+        public int score;
+
+        public MoveWithScore(Move move, int score, String details) {
+            this.move = move;
+            this.score = score;
+            this.details = details;
+        }
+    }
+
+    public java.util.ArrayList<MoveWithScore> getSortedLegalMovesWithScores(PieceColour colour) {
+        java.util.ArrayList<Move> legalMoves = getAllLegalMoves(colour);
+
+        if (legalMoves.size() == 0) {
+            return new java.util.ArrayList<MoveWithScore>();
+        }
+
+        java.util.ArrayList<MoveWithScore> movesWithScores = new java.util.ArrayList<MoveWithScore>();
+
+        for (int i = 0; i < legalMoves.size(); i++) {
+            Move move = legalMoves.get(i);
+            MoveWithScore moveWithScore = evaluateMove(move, colour);
+            movesWithScores.add(moveWithScore);
+        }
+
+        for (int i = 0; i < movesWithScores.size() - 1; i++) {
+            for (int j = 0; j < movesWithScores.size() - i - 1; j++) {
+                if (movesWithScores.get(j).score < movesWithScores.get(j + 1).score) {
+                    MoveWithScore temp = movesWithScores.get(j);
+                    movesWithScores.set(j, movesWithScores.get(j + 1));
+                    movesWithScores.set(j + 1, temp);
+                }
+            }
+        }
+
+        return movesWithScores;
+    }
 
 }
