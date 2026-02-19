@@ -40,7 +40,7 @@ public class Rook extends Piece {
 
         while (checkCol != nextCol || checkRow != nextRow) {
             for (Piece piece : board.getPieces()) {
-                if (piece.getX() < 1000) { // Only check pieces on board
+                if (piece.getX() < 1000) {
                     int pieceCol = (int)((piece.getX() - board.boardX - board.borderOffsetX) / board.squareSize);
                     int pieceRow = (int)((piece.getY() - board.boardY - board.borderOffsetY) / board.squareSize);
 
@@ -52,7 +52,7 @@ public class Rook extends Piece {
             checkCol = checkCol + stepX;
             checkRow = checkRow + stepY;
         }
-        
+
         for (Piece piece : board.getPieces()) {
             if (piece.getX() < 1000) {
                 int pieceCol = (int)((piece.getX() - board.boardX - board.borderOffsetX) / board.squareSize);

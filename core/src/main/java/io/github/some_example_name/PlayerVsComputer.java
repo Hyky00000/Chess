@@ -93,32 +93,23 @@ public class PlayerVsComputer {
     public void makeAIMove() {
         if (board.gameOver) return;
         if (board.promotingPawn != null) return;
-
         PieceColour aiColour;
         if (playerIsWhite) {
             aiColour = PieceColour.BLACK;
         } else {
             aiColour = PieceColour.WHITE;
         }
-
         java.util.ArrayList<Board.MoveWithScore> sortedMovesWithScores = board.getSortedLegalMovesWithScores(aiColour);
-
-        // Print all moves with their evaluations
         for (int i = 0; i < sortedMovesWithScores.size(); i++) {
             Board.MoveWithScore moveWithScore = sortedMovesWithScores.get(i);
             Board.Move move = moveWithScore.move;
             String details = moveWithScore.details;
             int total = moveWithScore.score;
-
-            // Get square notation
             String fromSquare = getSquareNotationFromCoords(move.piece.getX(), move.piece.getY());
             String toSquare = getSquareNotationFromCoords(move.targetX, move.targetY);
-
             System.out.println((i + 1) + ". " + fromSquare + " to " + toSquare + ": " + details + "score = " + total);
         }
-
         if (sortedMovesWithScores.size() == 0) return;
-
         Board.Move chosenMove;
         switch (aiDifficulty) {
             case 1:
@@ -135,7 +126,6 @@ public class PlayerVsComputer {
                 break;
         }
 
-        // Print the played move
         int playedIndex = -1;
         for (int i = 0; i < sortedMovesWithScores.size(); i++) {
             if (sortedMovesWithScores.get(i).move == chosenMove) {
@@ -180,9 +170,12 @@ public class PlayerVsComputer {
     private Board.Move getHardMoveFromMoveWithScore(java.util.ArrayList<Board.MoveWithScore> movesWithScores) {
         if (movesWithScores.size() == 0)
             return null;
-        int randomIndex = random.nextInt(movesWithScores.size());
-        return
-            movesWithScores.get(randomIndex).move;
+        int topMovesToConsider = 2;
+        if (movesWithScores.size() < 2) {
+            topMovesToConsider = movesWithScores.size();
+        }
+        int randomIndex = random.nextInt(topMovesToConsider);
+        return movesWithScores.get(randomIndex).move;
     }
 
 
@@ -190,39 +183,6 @@ public class PlayerVsComputer {
         int col = (int)((x - board.boardX - board.borderOffsetX) / board.squareSize);
         int row = (int)((y - board.boardY - board.borderOffsetY) / board.squareSize);
         return getSquareNotation(col, row);
-    }
-
-    private Board.Move getRandomMove(java.util.ArrayList<Board.Move> legalMoves) {
-        int randomIndex = random.nextInt(legalMoves.size());
-        return legalMoves.get(randomIndex);
-    }
-
-    private Board.Move getMediumMove(java.util.ArrayList<Board.Move> sortedMoves) {
-        if (sortedMoves.size() == 0) {
-            return null;
-        }
-
-        int topMovesCount = sortedMoves.size() / 3;
-        if (topMovesCount < 1) {
-            topMovesCount = 1;
-        }
-
-        int randomIndex = random.nextInt(topMovesCount);
-        return sortedMoves.get(randomIndex);
-    }
-
-    private Board.Move getHardMove(java.util.ArrayList<Board.Move> sortedMoves) {
-        if (sortedMoves.size() == 0) {
-            return null;
-        }
-
-        int topMovesToConsider = 2;
-        if (sortedMoves.size() < 2) {
-            topMovesToConsider = sortedMoves.size();
-        }
-
-        int randomIndex = random.nextInt(topMovesToConsider);
-        return sortedMoves.get(randomIndex);
     }
 
     public void draw(SpriteBatch batch) {

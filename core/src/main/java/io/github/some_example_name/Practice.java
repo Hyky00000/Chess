@@ -940,10 +940,6 @@ public class Practice {
         return waitingForClick;
     }
 
-    public boolean isMoveCorrect() {
-        return moveCorrect;
-    }
-
     private String getSquareNotation(int col, int row) {
         char colChar = (char)('A' + col);
         int displayRow = row + 1;

@@ -18,7 +18,6 @@ FifthIncrement.png
 FirstIncrement.png
 FourthIncrement.png
 Menu.png
-NetworkMenu.png
 NextPuzzle.png
 SecondIncrement.png
 SixthIncrement.png

@@ -2,6 +2,7 @@ package io.github.some_example_name;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 
+
 public class Board {
     public float width = 480;
     public float height = 480;
@@ -394,11 +395,10 @@ public class Board {
 
         if (piece instanceof Pawn) {
             int row = (int)((targetY - boardY - borderOffsetY) / squareSize);
-            if (piece.getColour() == PieceColour.WHITE && row == 7) {
-                promotePawn(piece, 0, whiteQueenTex, whiteRookTex, whiteBishopTex, whiteKnightTex);
-            }
-            else if (piece.getColour() == PieceColour.BLACK && row == 0) {
-                promotePawn(piece, 0, blackQueenTex, blackRookTex, blackBishopTex, blackKnightTex);
+            if ((piece.getColour() == PieceColour.WHITE && row == 7) ||
+                (piece.getColour() == PieceColour.BLACK && row == 0)) {
+                promotingPawn = piece;
+                return;
             }
         }
 
@@ -747,7 +747,6 @@ public class Board {
                 return;
             }
         }
-        promotingPawn = null;
     }
 
     private boolean attacksOpponentQueen(Piece piece, float targetX, float targetY, PieceColour aiColour) {
@@ -887,26 +886,21 @@ public class Board {
             tempCaptured = move.capturedPiece;
             tempCaptured.setX(1000);
         }
-
         PieceColour opponentColour = (aiColour == PieceColour.WHITE) ? PieceColour.BLACK : PieceColour.WHITE;
         if (isKingInCheck(opponentColour)) {
             score = score + 60;
             details.append("check +60, ");
         }
-
         piece.setX(oldX);
         piece.setY(oldY);
         if (tempCaptured != null) {
             tempCaptured.setX(move.targetX);
         }
-
         boolean newSquareAttacked = isSquareAttacked(move.targetX, move.targetY, aiColour);
         boolean newSquareDefended = isSquareDefended(move.targetX, move.targetY, aiColour);
-
         if (newSquareAttacked) {
             int attackerValue = findSmallestAttackerValue(move.targetX, move.targetY, aiColour);
             int ourPieceValue = getPieceValue(piece);
-
             if (ourPieceValue > attackerValue) {
                 if (pieceCurrentlyAttacked) {
                     score = score - 1000;
@@ -930,18 +924,15 @@ public class Board {
                 }
             }
         }
-
         if (!newSquareAttacked && pieceCurrentlyAttacked) {
             score = score + 100000;
             details.append("escape from attack +100000, ");
         }
-
         boolean attacksQueen = attacksOpponentQueen(piece, move.targetX, move.targetY, aiColour);
         if (attacksQueen) {
             score = score + 80;
             details.append("attacks queen +80, ");
         }
-
         float oldX2 = piece.getX();
         float oldY2 = piece.getY();
         piece.setX(move.targetX);
@@ -1018,7 +1009,6 @@ public class Board {
                 int currentRow = (int)((piece.getY() - boardY - borderOffsetY) / squareSize);
                 int newCol = (int)((move.targetX - boardX - borderOffsetX) / squareSize);
                 int newRow = (int)((move.targetY - boardY - borderOffsetY) / squareSize);
-
                 int oldDistanceToCenter = Math.abs(currentCol - 3) + Math.abs(currentCol - 4) +
                     Math.abs(currentRow - 3) + Math.abs(currentRow - 4);
                 int newDistanceToCenter = Math.abs(newCol - 3) + Math.abs(newCol - 4) +
@@ -1279,67 +1269,29 @@ public class Board {
         int bonus = 0;
         int col = (int)((targetX - boardX - borderOffsetX) / squareSize);
         int row = (int)((targetY - boardY - borderOffsetY) / squareSize);
-
         if (col >= 2 && col <= 5 && row >= 2 && row <= 5) {
             bonus = bonus + 5;
         }
         if ((col == 3 || col == 4) && (row == 3 || row == 4)) {
             bonus = bonus + 10;
         }
-
         if (piece instanceof Knight) {
             if (col >= 2 && col <= 5 && row >= 2 && row <= 5) {
                 bonus += 15;
             }
         }
-
         if (piece instanceof Bishop) {
             if (col == row || col == (7 - row)) {
                 bonus += 10;
             }
         }
-
         if (piece instanceof Rook) {
             if ((piece.getColour() == PieceColour.WHITE && row > 0) ||
                 (piece.getColour() == PieceColour.BLACK && row < 7)) {
                 bonus += 5;
             }
         }
-
         return bonus;
-    }
-
-    public java.util.ArrayList<Move> getSortedLegalMoves(PieceColour colour) {
-        java.util.ArrayList<Move> legalMoves = getAllLegalMoves(colour);
-
-        if (legalMoves.size() == 0) {
-            return legalMoves;
-        }
-
-        java.util.ArrayList<MoveWithScore> movesWithScores = new java.util.ArrayList<MoveWithScore>();
-
-        for (int i = 0; i < legalMoves.size(); i++) {
-            Move move = legalMoves.get(i);
-            MoveWithScore moveWithScore = evaluateMove(move, colour);
-            movesWithScores.add(moveWithScore);
-        }
-
-        for (int i = 0; i < movesWithScores.size() - 1; i++) {
-            for (int j = 0; j < movesWithScores.size() - i - 1; j++) {
-                if (movesWithScores.get(j).score < movesWithScores.get(j + 1).score) {
-                    MoveWithScore temp = movesWithScores.get(j);
-                    movesWithScores.set(j, movesWithScores.get(j + 1));
-                    movesWithScores.set(j + 1, temp);
-                }
-            }
-        }
-
-        java.util.ArrayList<Move> sortedMoves = new java.util.ArrayList<Move>();
-        for (int i = 0; i < movesWithScores.size(); i++) {
-            sortedMoves.add(movesWithScores.get(i).move);
-        }
-
-        return sortedMoves;
     }
 
     private boolean isSquareDefended(float squareX, float squareY, PieceColour defenderColour) {

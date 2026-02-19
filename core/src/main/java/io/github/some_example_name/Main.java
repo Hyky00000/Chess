@@ -63,6 +63,7 @@ public class Main extends ApplicationAdapter {
     private Practice practice;
     int aiDifficulty;
     boolean playerIsWhite;
+    private boolean inPromotion = false;
 
     private Piece promotingPawn = null;
     private boolean isWhitePromotion = false;
@@ -75,7 +76,6 @@ public class Main extends ApplicationAdapter {
     private int selectedIncrementValue = 0;
 
     private int moveCount = 0;
-    private boolean sixthIncrementApplied = false;
 
     private float blackFTime;
     private float whiteFTime;
@@ -85,6 +85,7 @@ public class Main extends ApplicationAdapter {
 
     private boolean lastWhiteTurn = true;
     private boolean isGameStarted = false;
+    private boolean checkPrinted = false;
 
     private int gameTypeAfterTimeSelection = 0;
 
@@ -152,7 +153,7 @@ public class Main extends ApplicationAdapter {
         batch.begin();
 
         // 0 is start, 1 is choose colour, 2 is difficulty, 3 is vs ai, 4 is pvp, 5 is pawn promotion,
-        // 6 is network menu, 7 is network game, 8 is times selection, 9-14 are increment selections, 15 is practice
+        // 8 is times selection, 9-14 are increment selections, 15 is practice
 
         if (mode != previousMode) {
             System.out.println("Mode = " + mode);
@@ -278,7 +279,7 @@ public class Main extends ApplicationAdapter {
                 if (x >= colourChoice.getX() && x <= colourChoice.getX() + colourChoice.getWidth() &&
                     y >= colourChoice.getY() && y <= colourChoice.getY() + colourChoice.getHeight()) {
                     float clickY = y - colourChoice.getY();
-                    playerIsWhite = clickY < colourChoice.getHeight();
+                    playerIsWhite = clickY < colourChoice.getHeight() / 2;
                     if (playerIsWhite){
                         System.out.println("White");
                     }
@@ -296,9 +297,7 @@ public class Main extends ApplicationAdapter {
             if (Gdx.input.justTouched()) {
                 float x = Gdx.input.getX();
                 float y = Gdx.graphics.getHeight() - Gdx.input.getY();
-
                 float boxHeight = difficultyChoiceHeight;
-
                 if ((x > difficulty.getX()) && (x < difficulty.getX() + difficulty.getWidth()) &&
                     (y < difficulty.getY() + (3 * boxHeight)) && (y > difficulty.getY() + (2 * boxHeight))) {
                     if (aiOrPractice == 0) {
@@ -648,11 +647,10 @@ public class Main extends ApplicationAdapter {
             if (pvcGame == null) {
                 pvcGame = new PlayerVsComputer(board, playerIsWhite, aiDifficulty);
             }
-            if (board.promotingPawn != null) {
+            if (board.promotingPawn != null && !inPromotion) {
+                inPromotion = true;
                 promotingPawn = board.promotingPawn;
                 isWhitePromotion = (promotingPawn.getColour() == PieceColour.WHITE);
-                previousMode = 3;
-                mode = 5;
                 if (isWhitePromotion) {
                     whiteClockRunning = true;
                     blackClockRunning = false;
@@ -660,8 +658,76 @@ public class Main extends ApplicationAdapter {
                     whiteClockRunning = false;
                     blackClockRunning = true;
                 }
-            } else {
+            }
 
+            if (inPromotion) {
+                board.draw(batch);
+                board.drawCapturedPieces(batch);
+                float pawnX = promotingPawn.getX();
+                int pawnCol = (int) ((pawnX - board.boardX - board.borderOffsetX) / board.squareSize);
+                float menuX, menuY;
+                if (pawnCol < 4) {
+                    menuX = board.boardX + (board.width - board.borderOffsetX - 60);
+                } else {
+                    menuX = board.borderOffsetX;
+                }
+                if (isWhitePromotion) {
+                    menuY = 200;
+                    whitePromotion.setX(menuX);
+                    whitePromotion.setY(menuY);
+                    whitePromotion.draw(batch);
+                } else {
+                    menuY = 100;
+                    blackPromotion.setX(menuX);
+                    blackPromotion.setY(menuY);
+                    blackPromotion.draw(batch);
+                }
+
+                if (Gdx.input.justTouched()) {
+                    float x = Gdx.input.getX();
+                    float y = Gdx.graphics.getHeight() - Gdx.input.getY();
+                    float menuWidth = isWhitePromotion ? whitePromotion.getWidth() : blackPromotion.getWidth();
+                    float menuHeight = isWhitePromotion ? whitePromotion.getHeight() : blackPromotion.getHeight();
+
+                    if (x >= menuX && x <= menuX + menuWidth && y >= menuY && y <= menuY + menuHeight) {
+                        float sectionHeight = menuHeight / 4;
+                        int choice;
+                        if (y > menuY + 3 * sectionHeight) {
+                            choice = 0;
+                        } else if (y > menuY + 2 * sectionHeight) {
+                            choice = 1;
+                        } else if (y > menuY + sectionHeight) {
+                            choice = 2;
+                        } else {
+                            choice = 3;
+                        }
+
+                        if (isWhitePromotion) {
+                            board.promotePawn(promotingPawn, choice,
+                                whiteQueenTex, whiteRookTex,
+                                whiteBishopTex, whiteKnightTex);
+                        } else {
+                            board.promotePawn(promotingPawn, choice,
+                                blackQueenTex, blackRookTex,
+                                blackBishopTex, blackKnightTex);
+                        }
+
+                        pvcGame.switchTurn();
+                        boolean currentWhiteTurn = pvcGame.isWhiteTurn();
+                        if (currentWhiteTurn) {
+                            blackClockRunning = false;
+                            whiteClockRunning = true;
+                        } else {
+                            whiteClockRunning = false;
+                            blackClockRunning = true;
+                        }
+                        lastWhiteTurn = currentWhiteTurn;
+
+                        inPromotion = false;
+                        promotingPawn = null;
+                    }
+                }
+            } else {
                 boolean shouldAIMove = (playerIsWhite && !pvcGame.isWhiteTurn()) || (!playerIsWhite && pvcGame.isWhiteTurn());
                 if (shouldAIMove && !board.gameOver) {
                     pvcGame.makeAIMove();
@@ -674,7 +740,6 @@ public class Main extends ApplicationAdapter {
                             moveCount++;
                             float halfMove = moveCount / 2.0f;
                             System.out.println("Move: " + halfMove);
-
                         } else {
                             whiteClockRunning = false;
                             blackClockRunning = true;
@@ -716,17 +781,84 @@ public class Main extends ApplicationAdapter {
             if (pvpGame == null) {
                 pvpGame = new PlayerVsPlayer(board);
             }
-            if (board.promotingPawn != null) {
+            if (board.promotingPawn != null && !inPromotion) {
+                inPromotion = true;
                 promotingPawn = board.promotingPawn;
                 isWhitePromotion = (promotingPawn.getColour() == PieceColour.WHITE);
-                previousMode = 4;
-                mode = 5;
                 if (isWhitePromotion) {
                     whiteClockRunning = true;
                     blackClockRunning = false;
                 } else {
                     whiteClockRunning = false;
                     blackClockRunning = true;
+                }
+            }
+
+            if (inPromotion) {
+                board.draw(batch);
+                board.drawCapturedPieces(batch);
+                float pawnX = promotingPawn.getX();
+                int pawnCol = (int) ((pawnX - board.boardX - board.borderOffsetX) / board.squareSize);
+                float menuX, menuY;
+                if (pawnCol < 4) {
+                    menuX = board.boardX + (board.width - board.borderOffsetX - 60);
+                } else {
+                    menuX = board.borderOffsetX;
+                }
+                if (isWhitePromotion) {
+                    menuY = 200;
+                    whitePromotion.setX(menuX);
+                    whitePromotion.setY(menuY);
+                    whitePromotion.draw(batch);
+                } else {
+                    menuY = 100;
+                    blackPromotion.setX(menuX);
+                    blackPromotion.setY(menuY);
+                    blackPromotion.draw(batch);
+                }
+
+                if (Gdx.input.justTouched()) {
+                    float x = Gdx.input.getX();
+                    float y = Gdx.graphics.getHeight() - Gdx.input.getY();
+                    float menuWidth = isWhitePromotion ? whitePromotion.getWidth() : blackPromotion.getWidth();
+                    float menuHeight = isWhitePromotion ? whitePromotion.getHeight() : blackPromotion.getHeight();
+
+                    if (x >= menuX && x <= menuX + menuWidth && y >= menuY && y <= menuY + menuHeight) {
+                        float sectionHeight = menuHeight / 4;
+                        int choice;
+                        if (y > menuY + 3 * sectionHeight) {
+                            choice = 0;
+                        } else if (y > menuY + 2 * sectionHeight) {
+                            choice = 1;
+                        } else if (y > menuY + sectionHeight) {
+                            choice = 2;
+                        } else {
+                            choice = 3;
+                        }
+
+                        if (isWhitePromotion) {
+                            board.promotePawn(promotingPawn, choice,
+                                whiteQueenTex, whiteRookTex,
+                                whiteBishopTex, whiteKnightTex);
+                        } else {
+                            board.promotePawn(promotingPawn, choice,
+                                blackQueenTex, blackRookTex,
+                                blackBishopTex, blackKnightTex);
+                        }
+
+                        boolean currentWhiteTurn = pvpGame.isWhiteTurn();
+                        if (currentWhiteTurn) {
+                            blackClockRunning = false;
+                            whiteClockRunning = true;
+                        } else {
+                            whiteClockRunning = false;
+                            blackClockRunning = true;
+                        }
+                        lastWhiteTurn = currentWhiteTurn;
+
+                        inPromotion = false;
+                        promotingPawn = null;
+                    }
                 }
             } else {
                 if (Gdx.input.justTouched()) {
@@ -754,95 +886,6 @@ public class Main extends ApplicationAdapter {
                     }
                 }
                 pvpGame.draw(batch);
-            }
-        } else if (mode == 5) {
-            board.draw(batch);
-            board.drawCapturedPieces(batch);
-            float pawnX = promotingPawn.getX();
-            int pawnCol = (int) ((pawnX - board.boardX - board.borderOffsetX) / board.squareSize);
-            float menuX, menuY;
-            if (pawnCol < 4) {
-                menuX = board.boardX + (board.width - board.borderOffsetX - 60);
-            } else {
-                menuX = board.borderOffsetX;
-            }
-            if (isWhitePromotion) {
-                menuY = 200;
-                whitePromotion.setX(menuX);
-                whitePromotion.setY(menuY);
-                whitePromotion.draw(batch);
-            } else {
-                menuY = 100;
-                blackPromotion.setX(menuX);
-                blackPromotion.setY(menuY);
-                blackPromotion.draw(batch);
-            }
-            if (Gdx.input.justTouched()) {
-                float x = Gdx.input.getX();
-                float y = Gdx.graphics.getHeight() - Gdx.input.getY();
-                float menuWidth;
-                float menuHeight;
-                if (isWhitePromotion) {
-                    menuWidth = whitePromotion.getWidth();
-                    menuHeight = whitePromotion.getHeight();
-                } else {
-                    menuWidth = blackPromotion.getWidth();
-                    menuHeight = blackPromotion.getHeight();
-                }
-                if (x >= menuX && x <= menuX + menuWidth &&
-                    y >= menuY && y <= menuY + menuHeight) {
-                    float relativeY = y - menuY;
-                    float sectionHeight = menuHeight / 4;
-                    int choice = (int) (relativeY / sectionHeight);
-                    if (choice == 0) {
-                        choice = 3;
-                    } else if (choice == 1) {
-                        choice = 2;
-                    } else if (choice == 2) {
-                        choice = 1;
-                    } else if (choice == 3) {
-                        choice = 0;
-                    }
-                    if (isWhitePromotion) {
-                        board.promotePawn(promotingPawn, choice,
-                            whiteQueenTex, whiteRookTex,
-                            whiteBishopTex, whiteKnightTex);
-                    } else {
-                        board.promotePawn(promotingPawn, choice,
-                            blackQueenTex, blackRookTex,
-                            blackBishopTex, blackKnightTex);
-                    }
-                    if (previousMode == 3) {
-                        mode = 3;
-                        if (pvcGame != null) {
-                            pvcGame.switchTurn();
-                            boolean currentWhiteTurn = pvcGame.isWhiteTurn();
-                            if (currentWhiteTurn) {
-                                blackClockRunning = false;
-                                whiteClockRunning = true;
-                            } else {
-                                whiteClockRunning = false;
-                                blackClockRunning = true;
-                            }
-                            lastWhiteTurn = currentWhiteTurn;
-                        }
-                    } else if (previousMode == 4) {
-                        mode = 4;
-                        if (pvpGame != null) {
-                            boolean currentWhiteTurn = pvpGame.isWhiteTurn();
-                            if (currentWhiteTurn) {
-                                blackClockRunning = false;
-                                whiteClockRunning = true;
-                            } else {
-                                whiteClockRunning = false;
-                                blackClockRunning = true;
-                            }
-                            lastWhiteTurn = currentWhiteTurn;
-                        }
-                    }
-                    promotingPawn = null;
-                    board.promotingPawn = null;
-                }
             }
         }
         float deltaTime = Gdx.graphics.getDeltaTime();
@@ -899,26 +942,36 @@ public class Main extends ApplicationAdapter {
         if (mode == 3) {
             boolean currentTurn = pvcGame.isWhiteTurn();
             if (currentTurn) {
-                if (board.isKingInCheck(PieceColour.WHITE)) {
-                    System.out.println("check!");
+                if (board.isKingInCheck(PieceColour.WHITE) && !checkPrinted) {
+                    System.out.println("check");
+                    checkPrinted = true;
                 }
             } else {
-                if (board.isKingInCheck(PieceColour.BLACK)) {
+                if (board.isKingInCheck(PieceColour.BLACK) && !checkPrinted) {
                     System.out.println("check");
+                    checkPrinted = true;
                 }
+            }
+            if (pvcGame.isWhiteTurn() != lastWhiteTurn) {
+                checkPrinted = false;
             }
         }
 
         if (mode == 4) {
             boolean currentTurn = pvpGame.isWhiteTurn();
             if (currentTurn) {
-                if (board.isKingInCheck(PieceColour.WHITE)) {
+                if (board.isKingInCheck(PieceColour.WHITE) && !checkPrinted) {
                     System.out.println("check");
+                    checkPrinted = true;
                 }
             } else {
-                if (board.isKingInCheck(PieceColour.BLACK)) {
+                if (board.isKingInCheck(PieceColour.BLACK) && !checkPrinted) {
                     System.out.println("check");
+                    checkPrinted = true;
                 }
+            }
+            if (pvpGame.isWhiteTurn() != lastWhiteTurn) {
+                checkPrinted = false;
             }
         }
 
@@ -970,58 +1023,58 @@ public class Main extends ApplicationAdapter {
 
     private void applyIncrement(boolean isWhite) {
         if (selectedIncrementType != 6) {
-            if (selectedIncrementType != 0 && selectedIncrementValue > 0) {
+            if (selectedIncrementType != 0)
                 if (isWhite) {
                     whiteFTime += selectedIncrementValue;
                 } else {
                     blackFTime += selectedIncrementValue;
                 }
-            }
+            return;
         }
-        else if (selectedIncrementType == 6) {
-            if (selectedIncrementValue == 1) {
+
+        if (selectedIncrementValue == 1) {
+            if (moveCount >= 80) {
                 if (isWhite) {
                     whiteFTime += 30;
                 } else {
                     blackFTime += 30;
                 }
             }
-            else if (selectedIncrementValue == 2) {
-                if (!sixthIncrementApplied) {
-                    if (isWhite && moveCount == 77) {
-                        whiteFTime += 1800;
-                        sixthIncrementApplied = true;
-                    } else if (!isWhite && moveCount == 78) {
-                        blackFTime += 1800;
-                        sixthIncrementApplied = true;
-                    }
+        } else if (selectedIncrementValue == 2) {
+            if (/*!sixthIncrementApplied && */  moveCount == 78) {
+                whiteFTime += 1800;
+            } if (/*!sixthIncrementApplied && */moveCount == 79) {
+                blackFTime += 1800;
+            }
+            if (moveCount >= 80) {
+                if (isWhite) {
+                    whiteFTime += 30;
+                } else {
+                    blackFTime += 30;
                 }
             }
-            else if (selectedIncrementValue == 3) {
-                if (moveCount >= 80) {
-                    if (!sixthIncrementApplied) {
-                        if (isWhite && moveCount == 79) {
-                            whiteFTime += 1800;
-                        } else if (!isWhite && moveCount == 80) {
-                            blackFTime += 1800;
-                        }
-                        sixthIncrementApplied = true;
-                    }
-                    if (isWhite) {
-                        whiteFTime += 30;
-                    } else {
-                        blackFTime += 30;
-                    }
+        } else if (selectedIncrementValue == 3) {
+            if (/*!sixthIncrementApplied && */moveCount == 78) {
+                whiteFTime += 1800;
+            } if (/*!sixthIncrementApplied && */  moveCount == 79) {
+                blackFTime += 1800;
+            }
+            if (moveCount >= 80) {
+                if (isWhite) {
+                    whiteFTime += 30;
+                } else {
+                    blackFTime += 30;
                 }
             }
         }
     }
 
+
+
     private void startGameWithSelectedTime() {
         whiteFTime = selectedTimeSeconds;
         blackFTime = selectedTimeSeconds;
         moveCount = 0;
-        sixthIncrementApplied = false;
         isGameStarted = true;
 
         whiteClockRunning = false;
@@ -1041,7 +1094,6 @@ public class Main extends ApplicationAdapter {
         whiteFTime = selectedTimeSeconds;
         blackFTime = selectedTimeSeconds;
         moveCount = 0;
-        sixthIncrementApplied = false;
         whiteClockRunning = false;
         blackClockRunning = false;
         lastWhiteTurn = true;
@@ -1072,9 +1124,5 @@ public class Main extends ApplicationAdapter {
 
 // Finished working is control+k then write what I changed then commit and push
 // Starting work is control+t then merge then pull
-// 640 x 480
-// PC IPv4: 192.168.137.1
-// laptop IPv4: 192.168.0.68.
-// fix the ai
-// dont forget about change AI photo png
-// fix the "nextPuzzle"
+// 640 x 480 display
+
